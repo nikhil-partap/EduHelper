@@ -27,7 +27,7 @@ export default function App() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <header className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            EduHelper
+            Class Pilot
           </h1>
           <p className="text-xl text-gray-600 font-medium">
             Your Learning Companion
@@ -40,7 +40,7 @@ export default function App() {
               Choose Your Role
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Select how you'll be using EduHelper today to get started with
+              Select how you'll be using Class Pilot today to get started with
               your personalized experience
             </p>
           </div>
@@ -86,7 +86,7 @@ export default function App() {
 
         <footer className="text-center mt-16 pt-8 border-t border-gray-200">
           <p className="text-gray-500">
-            © 2025 EduHelper - Empowering Education for Everyone
+            © 2025 Class Pilot - Empowering Education for Everyone
           </p>
         </footer>
       </div>

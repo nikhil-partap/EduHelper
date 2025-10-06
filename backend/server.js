@@ -29,7 +29,7 @@ app.use("/api/assignments", require("./routes/assignments"));
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.json({
-    message: "EduHelper Backend API is running!",
+    message: "Class Pilot Backend API is running!",
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || "development",
   });
@@ -72,7 +72,7 @@ const startServer = async () => {
   await connectDB();
 
   app.listen(PORT, () => {
-    console.log(`🚀 EduHelper Backend Server running on port ${PORT}`);
+    console.log(`🚀 Class Pilot Backend Server running on port ${PORT}`);
     console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   });

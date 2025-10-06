@@ -7,14 +7,14 @@ const router = express.Router();
 const users = [
   {
     id: 1,
-    email: "teacher@eduhelper.com",
+    email: "teacher@classpilot.com",
     password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
     role: "teacher",
     name: "John Teacher",
   },
   {
     id: 2,
-    email: "student@eduhelper.com",
+    email: "student@classpilot.com",
     password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
     role: "student",
     name: "Jane Student",

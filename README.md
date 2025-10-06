@@ -1,1 +1,1 @@
-# EduHelper
+# Class Pilot
