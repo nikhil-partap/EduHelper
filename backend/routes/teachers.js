@@ -9,6 +9,28 @@ const teacherData = {
     assignments: 24,
     avgGrade: "87%",
   },
+  timetable: [
+    {
+      day: "Monday",
+      slots: ["Math 9:00 AM", "Physics 11:00 AM", "Free", "History 2:00 PM"],
+    },
+    {
+      day: "Tuesday",
+      slots: ["Free", "Math 10:00 AM", "Physics 1:00 PM", "Free"],
+    },
+    {
+      day: "Wednesday",
+      slots: ["Math 9:00 AM", "Free", "History 12:00 PM", "Physics 3:00 PM"],
+    },
+    {
+      day: "Thursday",
+      slots: ["Physics 9:00 AM", "Math 11:00 AM", "Free", "History 2:00 PM"],
+    },
+    {
+      day: "Friday",
+      slots: ["Free", "History 10:00 AM", "Math 1:00 PM", "Free"],
+    },
+  ],
   upcomingClasses: [
     {
       subject: "Mathematics 101",
@@ -210,3 +232,44 @@ router.delete("/classes/:id", (req, res) => {
 });
 
 module.exports = router;
+
+// @route   GET /api/teachers/timetable
+// @desc    Get teacher's timetable
+// @access  Private (Teacher only)
+router.get("/timetable", (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: teacherData.timetable,
+    });
+  } catch (error) {
+    console.error("Get timetable error:", error);
+    res.status(500).json({message: "Server error"});
+  }
+});
+
+// @route   PUT /api/teachers/timetable
+// @desc    Update teacher's timetable
+// @access  Private (Teacher only)
+router.put("/timetable", (req, res) => {
+  try {
+    const {timetable} = req.body;
+
+    if (!timetable || !Array.isArray(timetable)) {
+      return res
+        .status(400)
+        .json({message: "Please provide valid timetable data"});
+    }
+
+    teacherData.timetable = timetable;
+
+    res.json({
+      success: true,
+      data: teacherData.timetable,
+      message: "Timetable updated successfully",
+    });
+  } catch (error) {
+    console.error("Update timetable error:", error);
+    res.status(500).json({message: "Server error"});
+  }
+});
