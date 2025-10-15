@@ -33,14 +33,15 @@ const userSchema = new mongoose.Schema(
       required: function () {
         return this.role === "teacher";
       },
-      // enum: ["APS", "DAV" , "KV"],
-      // default: "APS"
+      trim: true,
     },
     rollNumber: {
       type: String,
+      // This field is only required if the role is 'student'
       required: function () {
         return this.role === "student";
       },
+      trim: true,
     },
   },
   {
@@ -50,7 +51,11 @@ const userSchema = new mongoose.Schema(
 
 // hashing the password before saving
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  // Only run this function if password was actually modified
+  if (!this.isModified("password")) {
+    return next();
+  }
+
   const salt = await bcrypt.genSalt(3);
   this.password = await bcrypt.hash(this.password, salt);
   next();
@@ -58,11 +63,12 @@ userSchema.pre("save", async function (next) {
 
 // now i have to compare the incoming passwords with the hash password
 userSchema.method.matchPassword = async function (enteredPassword) {
-  return bcrypt.compare(enteredPassword, this.password);
+  return await bcrypt.compare(enteredPassword, this.password);
 };
 
 const User = mongoose.model("User", userSchema, "user");
 export default User;
+
 // Schema should have:
 
 // email (unique, required)
