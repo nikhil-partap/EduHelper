@@ -35,6 +35,11 @@ const authReducer = (state, action) => {
         loading: false,
         error: null,
       };
+    case "SET_LOADING":
+      return {
+        ...state,
+        loading: action.payload,
+      };
     case "CLEAR_ERROR":
       return {...state, error: null};
     default:
@@ -46,7 +51,7 @@ const initialState = {
   user: null,
   token: localStorage.getItem("token"),
   isAuthenticated: false,
-  loading: false,
+  loading: true, // Start with loading true to check authentication
   error: null,
 };
 
@@ -55,22 +60,28 @@ export const AuthProvider = ({children}) => {
 
   // Check if user is logged in on app start
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      // Verify token is still valid
-      authAPI
-        .getMe()
-        .then((response) => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          // Verify token is still valid
+          const response = await authAPI.getMe();
           dispatch({
             type: "LOGIN_SUCCESS",
             payload: {user: response.data.user, token},
           });
-        })
-        .catch(() => {
+        } catch (error) {
+          console.log("Token validation failed:", error.message);
           localStorage.removeItem("token");
           dispatch({type: "LOGOUT"});
-        });
-    }
+        }
+      } else {
+        // No token found, set loading to false
+        dispatch({type: "LOGOUT"});
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (credentials) => {

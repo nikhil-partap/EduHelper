@@ -1,11 +1,11 @@
 // /backend/server.js
 import express from "express";
-import {registerUser, loginUser} from "./controllers/AuthController.js";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import connectDB from "./config/db.js"; // Note the .js extension for ESM
 import authRoutes from "./routes/auth.js";
+import classRoutes from "./routes/class.js";
 
 // Load environment variables
 dotenv.config();
@@ -17,11 +17,22 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:3000"], // Vite and CRA default ports
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
 // --- API Routes ---
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
 // Basic route
 app.get("/", (req, res) => {
@@ -43,10 +54,8 @@ app.get("/health", (req, res) => {
 });
 
 // Future API Routes
-// import authRoutes from './routes/auth.js';
-// import classRoutes from './routes/class.js';
 app.use("/api/auth", authRoutes);
-// app.use('/api/class', classRoutes);
+app.use("/api/class", classRoutes);
 
 // --- Error Handling ---
 

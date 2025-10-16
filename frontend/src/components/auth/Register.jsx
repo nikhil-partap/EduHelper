@@ -1,7 +1,8 @@
 import {useState} from "react";
-import {useAuth} from "../context/AuthContext";
+import {Link} from "react-router-dom";
+import {useAuth} from "../../context/AuthContext";
 
-const Register = ({onSwitchToLogin}) => {
+const Register = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -189,13 +190,12 @@ const Register = ({onSwitchToLogin}) => {
           </div>
 
           <div className="text-center">
-            <button
-              type="button"
-              onClick={onSwitchToLogin}
+            <Link
+              to="/login"
               className="text-blue-600 hover:text-blue-500 text-sm"
             >
               Already have an account? Sign in
-            </button>
+            </Link>
           </div>
         </form>
       </div>

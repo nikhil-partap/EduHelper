@@ -3,9 +3,9 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-// Helper: Sign a JWT with user ID
-const generateToken = (userId) => {
-  return jwt.sign({userId}, process.env.JWT_SECRET, {expiresIn: "1h"});
+// Helper: Sign a JWT with user ID and role
+const generateToken = (userId, role) => {
+  return jwt.sign({userId, role}, process.env.JWT_SECRET, {expiresIn: "1h"});
 };
 
 // @desc    Register a new user (teacher or student)
@@ -48,7 +48,7 @@ export const registerUser = async (req, res, next) => {
     const user = await User.create(userData);
 
     // 4. generate JWT
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.role);
 
     // 5. respond with user info + Token
     res.status(201).json({
@@ -92,7 +92,7 @@ export const loginUser = async (req, res, next) => {
     }
 
     // Issue JWT
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.role);
 
     // Return user info + token
     res.status(200).json({
