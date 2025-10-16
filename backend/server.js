@@ -1,9 +1,11 @@
 // /backend/server.js
 import express from "express";
+import {registerUser, loginUser} from "./controllers/AuthController.js";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import connectDB from "./config/db.js"; // Note the .js extension for ESM
+import authRoutes from "./routes/auth.js";
 
 // Load environment variables
 dotenv.config();
@@ -43,7 +45,7 @@ app.get("/health", (req, res) => {
 // Future API Routes
 // import authRoutes from './routes/auth.js';
 // import classRoutes from './routes/class.js';
-// app.use('/api/auth', authRoutes);
+app.use("/api/auth", authRoutes);
 // app.use('/api/class', classRoutes);
 
 // --- Error Handling ---

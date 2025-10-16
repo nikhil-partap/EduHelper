@@ -1,0 +1,121 @@
+// File: /backend/controllers/authController.js
+
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+
+// Helper: Sign a JWT with user ID
+const generateToken = (userId) => {
+  return jwt.sign({userId}, process.env.JWT_SECRET, {expiresIn: "1h"});
+};
+
+// @desc    Register a new user (teacher or student)
+// TODO @route   POST /api/auth/register
+// @access  Public
+export const registerUser = async (req, res, next) => {
+  try {
+    const {name, email, password, role, schoolName, rollNumber} = req.body;
+
+    // 1. check for all required fields
+    if (!name || !email || !password || !role) {
+      return res
+        .status(400)
+        .json({message: "Name, email, password, and role are required"});
+    }
+
+    // Role-specific validation
+    if (role === "teacher" && !schoolName) {
+      return res
+        .status(400)
+        .json({message: "schoolName is required for teachers"});
+    }
+    if (role === "student" && !rollNumber) {
+      return res
+        .status(400)
+        .json({message: "rollNumber is required for students"});
+    }
+
+    // 2. prevent/checking for duplicate registrations
+    const existingUser = await User.findOne({email});
+    if (existingUser) {
+      return res.status(409).json({message: "Email already in use"});
+    }
+
+    // 3. create user (password hashing runs pre-save hooks )
+    const userData = {name, email, password, role};
+    if (role === "teacher") userData.schoolName = schoolName;
+    if (role === "student") userData.rollNumber = rollNumber;
+
+    const user = await User.create(userData);
+
+    // 4. generate JWT
+    const token = generateToken(user._id);
+
+    // 5. respond with user info + Token
+    res.status(201).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        schoolName: user.schoolName,
+        rollNumber: user.rollNumber,
+      },
+      token,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Authenticate user & get token
+// TODO @route   POST /api/auth/login
+// @access  Public
+export const loginUser = async (req, res, next) => {
+  try {
+    const {email, password} = req.body;
+
+    // validating input
+    if (!email || !password) {
+      return res.status(400).json({message: "Email and password are required"});
+    }
+
+    // Find user by email
+    const user = await User.findOne({email});
+    if (!user) {
+      return res.status(401).json({message: "Invalid email or password"});
+    }
+
+    // Compare passwords (using  bcrypt.compare internally)
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      return res.status(401).json({message: "Invalid email or password"});
+    }
+
+    // Issue JWT
+    const token = generateToken(user._id);
+
+    // Return user info + token
+    res.status(200).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        schoolName: user.schoolName,
+        rollNumber: user.rollNumber,
+      },
+      token,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMe = async (req, res, next) => {
+  try {
+    // req.user is set by protect middleware
+    res.status(200).json({user: req.user});
+  } catch (err) {
+    next(err);
+  }
+};

@@ -56,13 +56,14 @@ userSchema.pre("save", async function (next) {
     return next();
   }
 
-  const salt = await bcrypt.genSalt(3);
+  // the cost is set to 3 to save processing and time and this is for hackathon only  -  cost factor, indicating how many hashing rounds to perform
+  const salt = await bcrypt.genSalt(3); // TODO in future use the .env to assign the cost of salt
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
 // now i have to compare the incoming passwords with the hash password
-userSchema.method.matchPassword = async function (enteredPassword) {
+userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
