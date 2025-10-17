@@ -26,4 +26,18 @@ export const authAPI = {
   getMe: () => api.get("/api/auth/me"),
 };
 
+// Class API calls
+export const classAPI = {
+  // Teacher endpoints
+  createClass: (classData) => api.post("/api/class/create", classData),
+  getTeacherClasses: () => api.get("/api/class/teacher"),
+
+  // Student endpoints
+  joinClass: (classCode) => api.post("/api/class/join", {classCode}),
+  getStudentClasses: () => api.get("/api/class/student"),
+
+  // Shared endpoints
+  getClassDetails: (classId) => api.get(`/api/class/${classId}`),
+};
+
 export default api;

@@ -4,7 +4,8 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import {AuthProvider, useAuth} from "./context/AuthContext";
+import {AuthProvider} from "./context/AuthProvider";
+import {useAuth} from "./hooks/useAuth";
 import {Login, Register} from "./components/auth";
 import {
   Dashboard,
@@ -14,6 +15,7 @@ import {
   Footer,
 } from "./components/shared";
 import {TeacherClasses, StudentClasses, ComingSoon} from "./pages";
+import ClassDetails from "./pages/ClassDetails";
 
 // Protected Route Component
 const ProtectedRoute = ({children}) => {
@@ -154,6 +156,14 @@ const AppContent = () => {
                   description="View your class timetable and upcoming sessions"
                   icon="📅"
                 />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/class/:id"
+            element={
+              <ProtectedRoute>
+                <ClassDetails />
               </ProtectedRoute>
             }
           />

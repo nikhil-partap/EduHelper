@@ -5,7 +5,7 @@ import User from "../models/User.js";
 
 // Helper: Sign a JWT with user ID and role
 const generateToken = (userId, role) => {
-  return jwt.sign({userId, role}, process.env.JWT_SECRET, {expiresIn: "1h"});
+  return jwt.sign({userId, role}, process.env.JWT_SECRET, {expiresIn: "24h"});
 };
 
 // @desc    Register a new user (teacher or student)

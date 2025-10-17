@@ -1,16 +1,8 @@
-import {useState, useEffect} from "react";
-import {useAuth} from "../../context/AuthContext";
+import {useAuth} from "../../hooks/useAuth";
 import FeatureCard from "./FeatureCard";
 
 const Dashboard = () => {
   const {user} = useAuth();
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  // Update time every minute
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

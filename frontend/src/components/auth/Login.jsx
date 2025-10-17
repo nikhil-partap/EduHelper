@@ -1,6 +1,6 @@
 import {useState} from "react";
 import {Link} from "react-router-dom";
-import {useAuth} from "../../context/AuthContext";
+import {useAuth} from "../../hooks/useAuth";
 import FormInput from "../shared/FormInput";
 import Alert from "../shared/Alert";
 import LoadingSpinner from "../shared/LoadingSpinner";
