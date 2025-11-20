@@ -24,9 +24,9 @@ const Navigation = () => {
       ? [
           {name: "Dashboard", href: "/dashboard", icon: "🏠"},
           {name: "My Classes", href: "/classes", icon: "📚"},
-          {name: "Students", href: "/students", icon: "👥"},
+          {name: "Attendance", href: "/attendance", icon: "📊"},
           {name: "Assignments", href: "/assignments", icon: "📝"},
-          {name: "Reports", href: "/reports", icon: "📊"},
+          {name: "Students", href: "/students", icon: "👥"},
         ]
       : [
           {name: "Dashboard", href: "/dashboard", icon: "🏠"},

@@ -5,6 +5,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import {AuthProvider} from "./context/AuthProvider";
+import {ClassProvider} from "./context/ClassProvider";
 import {useAuth} from "./hooks/useAuth";
 import {Login, Register} from "./components/auth";
 import {
@@ -16,6 +17,7 @@ import {
 } from "./components/shared";
 import {TeacherClasses, StudentClasses, ComingSoon} from "./pages";
 import ClassDetails from "./pages/ClassDetails";
+import Attendance from "./pages/Attendance";
 
 // Protected Route Component
 const ProtectedRoute = ({children}) => {
@@ -124,6 +126,14 @@ const AppContent = () => {
             }
           />
           <Route
+            path="/attendance"
+            element={
+              <ProtectedRoute>
+                <Attendance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/reports"
             element={
               <ProtectedRoute>
@@ -184,7 +194,9 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <AppContent />
+        <ClassProvider>
+          <AppContent />
+        </ClassProvider>
       </Router>
     </AuthProvider>
   );

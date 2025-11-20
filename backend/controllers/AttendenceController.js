@@ -1,6 +1,7 @@
 // File: /backend/controllers/attendanceController.js
 
-import Attendance from "../models/Attendance.js";
+import Attendance from "../models/Attendence.js";
+
 import Class from "../models/Class.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";

@@ -1,6 +1,6 @@
-import {useState, useEffect} from "react";
+import {useEffect} from "react";
 import {useParams, useNavigate} from "react-router-dom";
-import {classAPI} from "../services/api";
+import {useClass} from "../hooks/useClass";
 import {useAuth} from "../hooks/useAuth";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
@@ -9,30 +9,19 @@ const ClassDetails = () => {
   const {id} = useParams();
   const navigate = useNavigate();
   const {user} = useAuth();
-  const [classData, setClassData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {
+    selectedClass: classData,
+    loading,
+    error,
+    getClassDetails,
+    clearError,
+  } = useClass();
 
   useEffect(() => {
-    const fetchClassDetails = async () => {
-      try {
-        setLoading(true);
-        const response = await classAPI.getClassDetails(id);
-        setClassData(response.data.class);
-        setError(null);
-      } catch (err) {
-        setError(
-          err.response?.data?.message || "Failed to fetch class details"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (id) {
-      fetchClassDetails();
+      getClassDetails(id);
     }
-  }, [id]);
+  }, [id, getClassDetails]);
 
   if (loading) {
     return (
@@ -45,7 +34,7 @@ const ClassDetails = () => {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Alert type="error" message={error} />
+        <Alert type="error" message={error} onClose={clearError} />
         <button
           onClick={() => navigate(-1)}
           className="mt-4 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md"

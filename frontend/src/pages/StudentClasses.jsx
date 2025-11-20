@@ -1,35 +1,20 @@
 import {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
-import {classAPI} from "../services/api";
+import {useClass} from "../hooks/useClass";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
 
 const StudentClasses = () => {
-  const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {classes, loading, error, fetchClasses, joinClass, clearError} =
+    useClass();
   const [success, setSuccess] = useState(null);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [joining, setJoining] = useState(false);
   const [classCode, setClassCode] = useState("");
 
-  // Fetch student's classes
-  const fetchClasses = async () => {
-    try {
-      setLoading(true);
-      const response = await classAPI.getStudentClasses();
-      setClasses(response.data.classes);
-      setError(null);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch classes");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchClasses();
-  }, []);
+  }, [fetchClasses]);
 
   // Join class with code
   const handleJoinClass = async (e) => {
@@ -38,13 +23,14 @@ const StudentClasses = () => {
 
     try {
       setJoining(true);
-      await classAPI.joinClass(classCode.trim().toUpperCase());
-      setSuccess("Successfully joined the class!");
-      setShowJoinForm(false);
-      setClassCode("");
-      fetchClasses(); // Refresh the list
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to join class");
+      const result = await joinClass(classCode.trim().toUpperCase());
+
+      if (result.success) {
+        setSuccess(result.message || "Successfully joined the class!");
+        setShowJoinForm(false);
+        setClassCode("");
+        setTimeout(() => setSuccess(null), 3000);
+      }
     } finally {
       setJoining(false);
     }
@@ -75,9 +61,7 @@ const StudentClasses = () => {
         </button>
       </div>
 
-      {error && (
-        <Alert type="error" message={error} onClose={() => setError(null)} />
-      )}
+      {error && <Alert type="error" message={error} onClose={clearError} />}
 
       {success && (
         <Alert

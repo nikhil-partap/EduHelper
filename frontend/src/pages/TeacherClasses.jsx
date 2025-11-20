@@ -1,38 +1,24 @@
 import {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
-import {classAPI} from "../services/api";
+import {useClass} from "../hooks/useClass";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
 
 const TeacherClasses = () => {
-  const [classes, setClasses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {classes, loading, error, fetchClasses, createClass, clearError} =
+    useClass();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [success, setSuccess] = useState(null);
   const [formData, setFormData] = useState({
     className: "",
     subject: "",
     board: "",
   });
 
-  // Fetch teacher's classes
-  const fetchClasses = async () => {
-    try {
-      setLoading(true);
-      const response = await classAPI.getTeacherClasses();
-      setClasses(response.data.classes);
-      setError(null);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch classes");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchClasses();
-  }, []);
+  }, [fetchClasses]);
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -45,12 +31,14 @@ const TeacherClasses = () => {
     e.preventDefault();
     try {
       setCreating(true);
-      await classAPI.createClass(formData);
-      setShowCreateForm(false);
-      setFormData({className: "", subject: "", board: ""});
-      fetchClasses(); // Refresh the list
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to create class");
+      const result = await createClass(formData);
+
+      if (result.success) {
+        setShowCreateForm(false);
+        setFormData({className: "", subject: "", board: ""});
+        setSuccess("Class created successfully!");
+        setTimeout(() => setSuccess(null), 3000);
+      }
     } finally {
       setCreating(false);
     }
@@ -79,8 +67,14 @@ const TeacherClasses = () => {
         </button>
       </div>
 
-      {error && (
-        <Alert type="error" message={error} onClose={() => setError(null)} />
+      {error && <Alert type="error" message={error} onClose={clearError} />}
+
+      {success && (
+        <Alert
+          type="success"
+          message={success}
+          onClose={() => setSuccess(null)}
+        />
       )}
 
       {/* Create Class Form */}
