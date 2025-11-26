@@ -8,7 +8,7 @@ const Footer = () => {
               <span className="text-white text-xs font-bold">CP</span>
             </div>
             <span className="text-gray-600 text-sm">
-              © 2024 Class Pilot. Built for better education.
+              © 2024 LeetClass. Built for better education.
             </span>
           </div>
 

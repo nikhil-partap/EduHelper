@@ -49,7 +49,8 @@ const classSchema = new mongoose.Schema(
 );
 
 // Auto-generate a unique classCode before first save
-classSchema.pre("save", async function (next) {  //  classSchema.pre this tells the mongoose for the Class Schema i  want to to something pre-(before) an event
+classSchema.pre("save", async function (next) {
+  //  classSchema.pre this tells the mongoose for the Class Schema i  want to to something pre-(before) an event
   if (!this.isNew) return next(); // if this is not new or is being updated then don`t remake the classCode
 
   // Build until we find a non-conflicting code
@@ -57,7 +58,7 @@ classSchema.pre("save", async function (next) {  //  classSchema.pre this tells 
   let exists = true;
 
   while (exists) {
-    const prefix = this.subject.replace(/\s+/g, "").slice(0, 4).toUpperCase(); // first remove spaces"Computer Science" → "ComputerScience"  then takes the first four characters of the result.ComputerScience" → "comp"  then characters "comp" → "COMP"
+    const prefix = this.subject.replace(/\s+/g, "").slice(0, 4).toUpperCase(); // first remove spaces"Computer Science" → "ComputerScience"  then takes the first four characters of the result. ComputerScience" → "comp"  then characters "comp" → "COMP"
     code = `${prefix}-${nanoid()}`; // combine the prefix with the random generated string with a - in between
     // this checks if the code generated is not generated before
     exists = await mongoose.models.Class.exists({classCode: code}); // here it checks if this same code is used in the database before ot prevent duplicates

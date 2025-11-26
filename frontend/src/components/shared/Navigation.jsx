@@ -37,7 +37,7 @@ const Navigation = () => {
         ];
 
   return (
-    <nav className="bg-white shadow-lg">
+    <nav className="bg-zinc-900 border-b border-zinc-800 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and brand */}
@@ -46,8 +46,8 @@ const Navigation = () => {
               <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-bold">CP</span>
               </div>
-              <span className="ml-2 text-xl font-bold text-gray-900">
-                Class Pilot
+              <span className="ml-2 text-xl font-bold text-white">
+                LeetClass
               </span>
             </Link>
           </div>
@@ -60,8 +60,8 @@ const Navigation = () => {
                 to={item.href}
                 className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 transition-colors duration-200 ${
                   location.pathname === item.href
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-blue-600"
+                    ? "text-blue-400 bg-zinc-800"
+                    : "text-gray-300 hover:text-blue-400"
                 }`}
               >
                 <span>{item.icon}</span>
@@ -73,14 +73,14 @@ const Navigation = () => {
           {/* User menu */}
           <div className="flex items-center space-x-4">
             <div className="hidden md:flex items-center space-x-3">
-              <div className="text-sm text-gray-700">
+              <div className="text-sm text-gray-200">
                 <span className="font-medium">{user?.name}</span>
-                <div className="text-xs text-gray-500 capitalize">
+                <div className="text-xs text-gray-400 capitalize">
                   {user?.role}
                 </div>
               </div>
-              <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-gray-600 text-sm font-medium">
+              <div className="h-8 w-8 bg-zinc-700 rounded-full flex items-center justify-center">
+                <span className="text-gray-200 text-sm font-medium">
                   {user?.name?.charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -96,7 +96,7 @@ const Navigation = () => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-zinc-800"
             >
               <span className="sr-only">Open main menu</span>
               {isMenuOpen ? "✕" : "☰"}
@@ -107,15 +107,15 @@ const Navigation = () => {
         {/* Mobile menu */}
         {isMenuOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-zinc-800">
               {menuItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
                   className={`px-3 py-2 rounded-md text-base font-medium flex items-center space-x-2 ${
                     location.pathname === item.href
-                      ? "text-blue-600 bg-blue-50"
-                      : "text-gray-600 hover:text-blue-600"
+                      ? "text-blue-400 bg-zinc-800"
+                      : "text-gray-300 hover:text-blue-400"
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -123,10 +123,10 @@ const Navigation = () => {
                   <span>{item.name}</span>
                 </Link>
               ))}
-              <div className="border-t border-gray-200 pt-3 mt-3">
-                <div className="px-3 py-2 text-sm text-gray-700">
+              <div className="border-t border-zinc-800 pt-3 mt-3">
+                <div className="px-3 py-2 text-sm text-gray-200">
                   <div className="font-medium">{user?.name}</div>
-                  <div className="text-xs text-gray-500 capitalize">
+                  <div className="text-xs text-gray-400 capitalize">
                     {user?.role}
                   </div>
                 </div>

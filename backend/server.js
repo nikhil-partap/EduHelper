@@ -20,12 +20,16 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"], // Vite and CRA default ports
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/, // Allow local network IPs
+    ],
     credentials: true,
   })
 );
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 
 // --- API Routes ---
 
@@ -38,7 +42,7 @@ app.use((req, res, next) => {
 // Basic route
 app.get("/", (req, res) => {
   res.json({
-    message: "Class Pilot API Server is running!",
+    message: "LeetClass API Server is running!",
     version: "1.0.0",
     timestamp: new Date().toISOString(),
   });
@@ -100,7 +104,7 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Class Pilot Server is running on port ${PORT}`);
+  console.log(`🚀 LeetClass Server is running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`📡 API Base URL: http://localhost:${PORT}`);
 });

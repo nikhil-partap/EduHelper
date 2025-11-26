@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Class Pilot API Server",
+  "description": "LeetClass API Server",
   "main": "server.js",
   "type": "module",
   "scripts": {

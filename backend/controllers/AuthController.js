@@ -5,6 +5,10 @@ import User from "../models/User.js";
 
 // Helper: Sign a JWT with user ID and role
 const generateToken = (userId, role) => {
+  // jwt.sign creates a token string with:
+  // 1. Payload: { userId, role }
+  // 2. Secret key: process.env.JWT_SECRET (stored securely in environment variables)
+  // 3. Options: expiresIn sets token validity (here, 24 hours)
   return jwt.sign({userId, role}, process.env.JWT_SECRET, {expiresIn: "24h"});
 };
 
@@ -13,9 +17,9 @@ const generateToken = (userId, role) => {
 // @access  Public
 export const registerUser = async (req, res, next) => {
   try {
-    const {name, email, password, role, schoolName, rollNumber} = req.body;
+    const {name, email, password, role, schoolName, rollNumber} = req.body; // destructuring assignment dont mess with the order
 
-    // 1. check for all required fields
+    // 1. check for all required fields more cleraly - // not trusting the frontend/user and checking the responce on server side
     if (!name || !email || !password || !role) {
       return res
         .status(400)

@@ -27,16 +27,16 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
             <span className="text-white text-2xl font-bold">CP</span>
           </div>
-          <h2 className="text-3xl font-extrabold text-gray-900">
-            Welcome to Class Pilot
+          <h2 className="text-3xl font-extrabold text-white">
+            Welcome to LeetClass
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-400">
             Sign in to your classroom management system
           </p>
         </div>

@@ -41,7 +41,7 @@ const PublicRoute = ({children}) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" text="Initializing Class Pilot..." />
+        <LoadingSpinner size="lg" text="Initializing LeetClass..." />
       </div>
     );
   }
@@ -62,7 +62,7 @@ const ClassesPage = () => {
 
 const AppContent = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-black flex flex-col">
       <Navigation />
       <main className="flex-1">
         <Routes>

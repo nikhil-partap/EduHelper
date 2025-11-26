@@ -1,11 +1,9 @@
 import {useState, useEffect} from "react";
 import {useClass} from "../hooks/useClass";
 import {useAuth} from "../hooks/useAuth";
-import axios from "axios";
+import {attendanceAPI} from "../services/api";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
-
-const API_BASE = "http://localhost:5000";
 
 const Attendance = () => {
   const {user} = useAuth();
@@ -30,15 +28,7 @@ const Attendance = () => {
   const fetchAttendance = async (classId) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-
-      const response = await axios.get(
-        `${API_BASE}/api/attendance/class?classId=${classId}`,
-        {
-          headers: {Authorization: `Bearer ${token}`},
-        }
-      );
-
+      const response = await attendanceAPI.getClassAttendance(classId);
       setAttendanceData(response.data.attendanceByDate || {});
       setError(null);
     } catch (err) {
@@ -51,15 +41,7 @@ const Attendance = () => {
   // Fetch attendance stats
   const fetchStats = async (classId) => {
     try {
-      const token = localStorage.getItem("token");
-
-      const response = await axios.get(
-        `${API_BASE}/api/attendance/stats?classId=${classId}`,
-        {
-          headers: {Authorization: `Bearer ${token}`},
-        }
-      );
-
+      const response = await attendanceAPI.getAttendanceStats(classId);
       setStats(response.data.stats || []);
     } catch (err) {
       console.error("Failed to fetch stats:", err);
@@ -77,20 +59,12 @@ const Attendance = () => {
   // Mark attendance for a student
   const markAttendance = async (studentId, status) => {
     try {
-      const token = localStorage.getItem("token");
-
-      await axios.post(
-        `${API_BASE}/api/attendance/mark`,
-        {
-          classId: selectedClass._id,
-          studentId,
-          date: selectedDate,
-          status,
-        },
-        {
-          headers: {Authorization: `Bearer ${token}`},
-        }
-      );
+      await attendanceAPI.markAttendance({
+        classId: selectedClass._id,
+        studentId,
+        date: selectedDate,
+        status,
+      });
 
       setSuccess(`Attendance marked as ${status}`);
       setTimeout(() => setSuccess(null), 2000);
@@ -100,6 +74,35 @@ const Attendance = () => {
       await fetchStats(selectedClass._id);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to mark attendance");
+    }
+  };
+
+  // Mark all students as present/absent
+  const markAllAttendance = async (status) => {
+    if (!selectedClass?.students || selectedClass.students.length === 0) return;
+
+    try {
+      setLoading(true);
+      const promises = selectedClass.students.map((student) =>
+        attendanceAPI.markAttendance({
+          classId: selectedClass._id,
+          studentId: student._id,
+          date: selectedDate,
+          status,
+        })
+      );
+
+      await Promise.all(promises);
+      setSuccess(`All students marked as ${status}`);
+      setTimeout(() => setSuccess(null), 2000);
+
+      // Refresh data
+      await fetchAttendance(selectedClass._id);
+      await fetchStats(selectedClass._id);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to mark attendance");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,10 +122,8 @@ const Attendance = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Attendance Management
-        </h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-white">Attendance Management</h1>
+        <p className="mt-2 text-gray-400">
           Track and manage student attendance for your classes
         </p>
       </div>
@@ -139,14 +140,14 @@ const Attendance = () => {
       )}
 
       {/* Class Selection */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
+        <label className="block text-sm font-medium text-gray-200 mb-2">
           Select Class
         </label>
         <select
           value={selectedClass?._id || ""}
           onChange={(e) => handleClassSelect(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Choose a class...</option>
           {classes.map((cls) => (
@@ -160,15 +161,15 @@ const Attendance = () => {
       {selectedClass && (
         <>
           {/* Date Selection */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
+            <label className="block text-sm font-medium text-gray-200 mb-2">
               Select Date
             </label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -179,10 +180,26 @@ const Attendance = () => {
           ) : (
             <>
               {/* Student List for Marking Attendance */}
-              <div className="bg-white rounded-lg shadow p-6 mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Mark Attendance - {selectedDate}
-                </h2>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-white">
+                    Mark Attendance - {selectedDate}
+                  </h2>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => markAllAttendance("Present")}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      Mark All Present
+                    </button>
+                    <button
+                      onClick={() => markAllAttendance("Absent")}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      Mark All Absent
+                    </button>
+                  </div>
+                </div>
 
                 {selectedClass.students && selectedClass.students.length > 0 ? (
                   <div className="space-y-3">
@@ -198,7 +215,7 @@ const Attendance = () => {
                       return (
                         <div
                           key={student._id}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                          className="flex items-center justify-between p-4 bg-zinc-800 rounded-lg"
                         >
                           <div className="flex items-center space-x-3">
                             <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center">
@@ -207,10 +224,10 @@ const Attendance = () => {
                               </span>
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">
+                              <p className="font-medium text-white">
                                 {student.name}
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-gray-400">
                                 {student.email}
                               </p>
                             </div>
@@ -224,7 +241,7 @@ const Attendance = () => {
                               className={`px-4 py-2 rounded-md font-medium ${
                                 todayAttendance?.status === "Present"
                                   ? "bg-green-600 text-white"
-                                  : "bg-gray-200 text-gray-700 hover:bg-green-100"
+                                  : "bg-zinc-700 text-gray-300 hover:bg-green-600 hover:text-white"
                               }`}
                             >
                               Present
@@ -236,7 +253,7 @@ const Attendance = () => {
                               className={`px-4 py-2 rounded-md font-medium ${
                                 todayAttendance?.status === "Absent"
                                   ? "bg-red-600 text-white"
-                                  : "bg-gray-200 text-gray-700 hover:bg-red-100"
+                                  : "bg-zinc-700 text-gray-300 hover:bg-red-600 hover:text-white"
                               }`}
                             >
                               Absent
@@ -247,7 +264,7 @@ const Attendance = () => {
                     })}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-gray-400 text-center py-8">
                     No students enrolled in this class yet.
                   </p>
                 )}
@@ -255,16 +272,16 @@ const Attendance = () => {
 
               {/* Attendance Statistics */}
               {stats.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">
                     Attendance Statistics
                   </h2>
 
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-zinc-800">
+                      <thead className="bg-zinc-800">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                             Student
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -281,16 +298,16 @@ const Attendance = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-zinc-900 divide-y divide-zinc-800">
                         {stats.map((stat) => (
                           <tr key={stat.studentId}>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-white">
                                 {stat.name}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-gray-400">
                                 {stat.rollNumber || "N/A"}
                               </div>
                             </td>
@@ -306,10 +323,10 @@ const Attendance = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
-                                <div className="text-sm font-medium text-gray-900">
+                                <div className="text-sm font-medium text-white">
                                   {stat.percentage}%
                                 </div>
-                                <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                                <div className="ml-2 w-16 bg-zinc-700 rounded-full h-2">
                                   <div
                                     className={`h-2 rounded-full ${
                                       stat.percentage >= 75
@@ -336,13 +353,13 @@ const Attendance = () => {
       )}
 
       {!selectedClass && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6">
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📊</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-white mb-2">
               Select a Class to Begin
             </h3>
-            <p className="text-gray-500">
+            <p className="text-gray-400">
               Choose a class from the dropdown above to start marking attendance
             </p>
           </div>

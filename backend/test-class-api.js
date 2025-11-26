@@ -5,7 +5,7 @@ const API_BASE = "http://localhost:5000";
 
 const testClassAPI = async () => {
   try {
-    console.log("🧪 Testing Class Pilot - Class Management API...\n");
+    console.log("🧪 Testing LeetClass - Class Management API...\n");
 
     // Test 1: Health check
     console.log("1. Testing health endpoint...");

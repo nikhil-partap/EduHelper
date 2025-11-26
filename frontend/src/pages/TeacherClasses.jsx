@@ -56,8 +56,8 @@ const TeacherClasses = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Classes</h1>
-          <p className="mt-2 text-gray-600">Manage your classes and students</p>
+          <h1 className="text-3xl font-bold text-white">My Classes</h1>
+          <p className="mt-2 text-gray-400">Manage your classes and students</p>
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
@@ -79,8 +79,8 @@ const TeacherClasses = () => {
 
       {/* Create Class Form */}
       {showCreateForm && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-medium text-white mb-4">
             Create New Class
           </h3>
           <form onSubmit={handleCreateClass} className="space-y-4">
@@ -161,7 +161,7 @@ const TeacherClasses = () => {
               No classes yet
             </h3>
             <p className="text-gray-500 mb-6">
-              Create your first class to get started with Class Pilot
+              Create your first class to get started with LeetClass
             </p>
           </div>
         </div>

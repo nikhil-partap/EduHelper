@@ -40,4 +40,25 @@ export const classAPI = {
   getClassDetails: (classId) => api.get(`/api/class/${classId}`),
 };
 
+// Attendance API calls
+export const attendanceAPI = {
+  // Teacher endpoints
+  markAttendance: (data) => api.post("/api/attendance/mark", data),
+  uploadAttendance: (data) => api.post("/api/attendance/upload", data),
+  getClassAttendance: (classId, date = null) => {
+    const params = date
+      ? `?classId=${classId}&date=${date}`
+      : `?classId=${classId}`;
+    return api.get(`/api/attendance/class${params}`);
+  },
+  getAttendanceStats: (classId) =>
+    api.get(`/api/attendance/stats?classId=${classId}`),
+
+  // Student and teacher endpoint
+  getStudentAttendance: (classId, studentId) =>
+    api.get(
+      `/api/attendance/student?classId=${classId}&studentId=${studentId}`
+    ),
+};
+
 export default api;
