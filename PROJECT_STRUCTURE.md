@@ -1,4 +1,4 @@
-# Class Pilot - Project Structure
+# EduHelper - Project Structure
 
 ## ✅ Organized File Structure
 

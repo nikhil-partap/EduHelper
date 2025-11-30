@@ -1,4 +1,4 @@
-# Frontend Complete Update - Class Pilot 🚀
+# Frontend Complete Update - EduHelper 🚀
 
 ## ✅ Major Updates Completed
 

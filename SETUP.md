@@ -1,4 +1,4 @@
-# Class Pilot - Setup Guide
+# EduHelper - Setup Guide
 
 ## 🚀 Quick Start
 
