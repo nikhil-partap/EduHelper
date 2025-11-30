@@ -61,4 +61,32 @@ export const attendanceAPI = {
     ),
 };
 
+// Quiz API calls
+export const quizAPI = {
+  // Teacher endpoints
+  generateQuiz: (data) => api.post("/api/quiz/generate", data),
+  getClassQuizzes: (classId) => api.get(`/api/quiz/class/${classId}`),
+  getQuizStats: (quizId) => api.get(`/api/quiz/stats/${quizId}`),
+
+  // Student endpoints
+  getQuiz: (quizId) => api.get(`/api/quiz/${quizId}`),
+  submitQuiz: (quizId, answers) =>
+    api.post(`/api/quiz/${quizId}/submit`, {answers}),
+  getStudentAttempts: (classId, studentId) =>
+    api.get(`/api/quiz/attempts/${classId}/${studentId}`),
+};
+
+// Study Planner API calls
+export const studyPlannerAPI = {
+  // Student endpoints
+  createPlan: (data) => api.post("/api/study-planner", data),
+  getMyPlans: () => api.get("/api/study-planner/my-plans"),
+  updateProgress: (planId, data) =>
+    api.patch(`/api/study-planner/${planId}/progress`, data),
+  deletePlan: (planId) => api.delete(`/api/study-planner/${planId}`),
+
+  // Shared endpoints
+  getPlanDetails: (planId) => api.get(`/api/study-planner/${planId}`),
+};
+
 export default api;
