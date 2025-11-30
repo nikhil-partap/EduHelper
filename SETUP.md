@@ -24,7 +24,7 @@
 
 3. **Environment Configuration:**
 
-   - The `.env` file is already configured with MongoDB Atlas (you have to go to MongoDB Atlas website and get a database link to even start the backend)
+   - The `.env` file is already configured with MongoDB Atlas (you have to go to MongoDB Atlas website and get a database link to even start the backend put the MongoDB Atlas url in .env or /backend/config/db.js)
    - Update `JWT_SECRET` for production use
 
 4. **Start the backend server:**
