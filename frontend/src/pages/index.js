@@ -8,3 +8,5 @@ export {default as QuizGenerator} from "./QuizGenerator";
 export {default as Quizzes} from "./Quizzes";
 export {default as TakeQuiz} from "./TakeQuiz";
 export {default as StudyPlanner} from "./StudyPlanner";
+export {default as Grades} from "./Grades";
+export {default as Schedule} from "./Schedule";

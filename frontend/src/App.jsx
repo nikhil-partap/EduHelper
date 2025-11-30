@@ -15,7 +15,13 @@ import {
   Navigation,
   Footer,
 } from "./components/shared";
-import {TeacherClasses, StudentClasses, ComingSoon} from "./pages";
+import {
+  TeacherClasses,
+  StudentClasses,
+  ComingSoon,
+  Grades,
+  Schedule,
+} from "./pages";
 import ClassDetails from "./pages/ClassDetails";
 import Attendance from "./pages/Attendance";
 import StudentAttendance from "./pages/StudentAttendance";
