@@ -18,6 +18,10 @@ import {
 import {TeacherClasses, StudentClasses, ComingSoon} from "./pages";
 import ClassDetails from "./pages/ClassDetails";
 import Attendance from "./pages/Attendance";
+import QuizGenerator from "./pages/QuizGenerator";
+import Quizzes from "./pages/Quizzes";
+import TakeQuiz from "./pages/TakeQuiz";
+import StudyPlanner from "./pages/StudyPlanner";
 
 // Protected Route Component
 const ProtectedRoute = ({children}) => {
@@ -130,6 +134,46 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <Attendance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quizzes"
+            element={
+              <ProtectedRoute>
+                <Quizzes />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quiz/generate"
+            element={
+              <ProtectedRoute>
+                <QuizGenerator />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quiz/:quizId/take"
+            element={
+              <ProtectedRoute>
+                <TakeQuiz />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quiz/:quizId"
+            element={
+              <ProtectedRoute>
+                <TakeQuiz />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/study-planner"
+            element={
+              <ProtectedRoute>
+                <StudyPlanner />
               </ProtectedRoute>
             }
           />

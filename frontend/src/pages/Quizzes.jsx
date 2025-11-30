@@ -18,7 +18,8 @@ const Quizzes = () => {
     if (classes.length === 0) {
       fetchClasses();
     }
-  }, [classes.length, fetchClasses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classes.length]);
 
   const handleClassSelect = async (classId) => {
     const selected = classes.find((c) => c._id === classId);

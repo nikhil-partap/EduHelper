@@ -14,7 +14,8 @@ const StudentClasses = () => {
 
   useEffect(() => {
     fetchClasses();
-  }, [fetchClasses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Join class with code
   const handleJoinClass = async (e) => {

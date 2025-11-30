@@ -25,15 +25,15 @@ const Navigation = () => {
           {name: "Dashboard", href: "/dashboard", icon: "🏠"},
           {name: "My Classes", href: "/classes", icon: "📚"},
           {name: "Attendance", href: "/attendance", icon: "📊"},
-          {name: "Assignments", href: "/assignments", icon: "📝"},
-          {name: "Students", href: "/students", icon: "👥"},
+          {name: "Quizzes", href: "/quizzes", icon: "📝"},
+          {name: "Generate Quiz", href: "/quiz/generate", icon: "🤖"},
         ]
       : [
           {name: "Dashboard", href: "/dashboard", icon: "🏠"},
           {name: "My Classes", href: "/classes", icon: "📚"},
-          {name: "Assignments", href: "/assignments", icon: "📝"},
+          {name: "Quizzes", href: "/quizzes", icon: "📝"},
+          {name: "Study Planner", href: "/study-planner", icon: "📅"},
           {name: "Grades", href: "/grades", icon: "🎯"},
-          {name: "Schedule", href: "/schedule", icon: "📅"},
         ];
 
   return (

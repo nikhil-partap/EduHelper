@@ -22,7 +22,8 @@ const Attendance = () => {
     if (classes.length === 0) {
       fetchClasses();
     }
-  }, [classes.length, fetchClasses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classes.length]);
 
   // Fetch attendance for selected class
   const fetchAttendance = async (classId) => {

@@ -18,7 +18,8 @@ const TeacherClasses = () => {
 
   useEffect(() => {
     fetchClasses();
-  }, [fetchClasses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle form input changes
   const handleInputChange = (e) => {

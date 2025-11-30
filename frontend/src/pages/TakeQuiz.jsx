@@ -14,10 +14,6 @@ const TakeQuiz = () => {
   const [answers, setAnswers] = useState([]);
   const [result, setResult] = useState(null);
 
-  useEffect(() => {
-    fetchQuiz();
-  }, [quizId]);
-
   const fetchQuiz = async () => {
     try {
       setLoading(true);
@@ -31,6 +27,11 @@ const TakeQuiz = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizId]);
 
   const handleAnswerSelect = (questionIndex, optionIndex) => {
     const newAnswers = [...answers];
