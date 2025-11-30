@@ -289,7 +289,9 @@ export const getStudentQuizAttempts = async (req, res, next) => {
     const isTeacher =
       req.user.role === "teacher" && classDoc.teacherId.equals(req.user._id);
     const isStudentSelf =
-      req.user.role === "student" && String(req.user._id) === String(studentId);
+      req.user.role === "student" &&
+      (String(req.user._id) === String(studentId) ||
+        String(req.user.id) === String(studentId));
     if (!isTeacher && !isStudentSelf)
       return res.status(403).json({ message: "Access denied" });
 
