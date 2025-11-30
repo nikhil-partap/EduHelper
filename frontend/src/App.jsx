@@ -52,7 +52,7 @@ const PublicRoute = ({children}) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" text="Initializing LeetClass..." />
+        <LoadingSpinner size="lg" text="Initializing EduHelper..." />
       </div>
     );
   }

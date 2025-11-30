@@ -162,7 +162,7 @@ const TeacherClasses = () => {
               No classes yet
             </h3>
             <p className="text-gray-500 mb-6">
-              Create your first class to get started with LeetClass
+              Create your first class to get started with EduHelper
             </p>
           </div>
         </div>

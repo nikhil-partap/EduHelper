@@ -5,10 +5,10 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center space-x-2 mb-4 md:mb-0">
             <div className="h-6 w-6 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">CP</span>
+              <span className="text-white text-xs font-bold">EH</span>
             </div>
             <span className="text-gray-600 text-sm">
-              © 2024 LeetClass. Built for better education.
+              © 2024 EduHelper. Built for better education.
             </span>
           </div>
 

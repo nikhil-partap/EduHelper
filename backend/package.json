@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "LeetClass API Server",
+  "description": "EduHelper API Server",
   "main": "server.js",
   "type": "module",
   "scripts": {

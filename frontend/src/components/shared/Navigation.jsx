@@ -46,10 +46,10 @@ const Navigation = () => {
           <div className="flex items-center">
             <Link to="/dashboard" className="flex-shrink-0 flex items-center">
               <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">CP</span>
+                <span className="text-white text-sm font-bold">EH</span>
               </div>
               <span className="ml-2 text-xl font-bold text-white">
-                LeetClass
+                EduHelper
               </span>
             </Link>
           </div>

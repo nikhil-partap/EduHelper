@@ -44,7 +44,7 @@ app.use((req, res, next) => {
 // Basic route
 app.get("/", (req, res) => {
   res.json({
-    message: "LeetClass API Server is running!",
+    message: "EduHelper API Server is running!",
     version: "1.0.0",
     timestamp: new Date().toISOString(),
   });
@@ -108,7 +108,7 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🚀 LeetClass Server is running on port ${PORT}`);
+  console.log(`🚀 EduHelper Server is running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`📡 API Base URL: http://localhost:${PORT}`);
 });

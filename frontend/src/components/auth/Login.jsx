@@ -34,7 +34,7 @@ const Login = () => {
             <span className="text-white text-2xl font-bold">CP</span>
           </div>
           <h2 className="text-3xl font-extrabold text-white">
-            Welcome to LeetClass
+            Welcome to EduHelper
           </h2>
           <p className="mt-2 text-sm text-gray-400">
             Sign in to your classroom management system

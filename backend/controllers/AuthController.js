@@ -9,7 +9,9 @@ const generateToken = (userId, role) => {
   // 1. Payload: { userId, role }
   // 2. Secret key: process.env.JWT_SECRET (stored securely in environment variables)
   // 3. Options: expiresIn sets token validity (here, 24 hours)
-  return jwt.sign({userId, role}, process.env.JWT_SECRET, {expiresIn: "24h"});
+  return jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+    expiresIn: "24h",
+  });
 };
 
 // @desc    Register a new user (teacher or student)
@@ -17,35 +19,35 @@ const generateToken = (userId, role) => {
 // @access  Public
 export const registerUser = async (req, res, next) => {
   try {
-    const {name, email, password, role, schoolName, rollNumber} = req.body; // destructuring assignment dont mess with the order
+    const { name, email, password, role, schoolName, rollNumber } = req.body; // destructuring assignment dont mess with the order
 
     // 1. check for all required fields more cleraly - // not trusting the frontend/user and checking the responce on server side
     if (!name || !email || !password || !role) {
       return res
         .status(400)
-        .json({message: "Name, email, password, and role are required"});
+        .json({ message: "Name, email, password, and role are required" });
     }
 
     // Role-specific validation
     if (role === "teacher" && !schoolName) {
       return res
         .status(400)
-        .json({message: "schoolName is required for teachers"});
+        .json({ message: "schoolName is required for teachers" });
     }
     if (role === "student" && !rollNumber) {
       return res
         .status(400)
-        .json({message: "rollNumber is required for students"});
+        .json({ message: "rollNumber is required for students" });
     }
 
     // 2. prevent/checking for duplicate registrations
-    const existingUser = await User.findOne({email});
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({message: "Email already in use"});
+      return res.status(409).json({ message: "Email already in use" });
     }
 
     // 3. create user (password hashing runs pre-save hooks )
-    const userData = {name, email, password, role};
+    const userData = { name, email, password, role };
     if (role === "teacher") userData.schoolName = schoolName;
     if (role === "student") userData.rollNumber = rollNumber;
 
@@ -76,23 +78,25 @@ export const registerUser = async (req, res, next) => {
 // @access  Public
 export const loginUser = async (req, res, next) => {
   try {
-    const {email, password} = req.body;
+    const { email, password } = req.body;
 
     // validating input
     if (!email || !password) {
-      return res.status(400).json({message: "Email and password are required"});
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
     }
 
     // Find user by email
-    const user = await User.findOne({email});
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({message: "Invalid email or password"});
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     // Compare passwords (using  bcrypt.compare internally)
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return res.status(401).json({message: "Invalid email or password"});
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     // Issue JWT
@@ -118,7 +122,17 @@ export const loginUser = async (req, res, next) => {
 export const getMe = async (req, res, next) => {
   try {
     // req.user is set by protect middleware
-    res.status(200).json({user: req.user});
+    // Return in same format as login/register for consistency
+    res.status(200).json({
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        schoolName: req.user.schoolName,
+        rollNumber: req.user.rollNumber,
+      },
+    });
   } catch (err) {
     next(err);
   }

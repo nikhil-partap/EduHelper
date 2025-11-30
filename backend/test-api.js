@@ -5,7 +5,7 @@ const API_BASE = "http://localhost:5000";
 
 const testAPI = async () => {
   try {
-    console.log("🧪 Testing LeetClass API...\n");
+    console.log("🧪 Testing EduHelper API...\n");
 
     // Test 1: Health check
     console.log("1. Testing health endpoint...");
@@ -47,7 +47,7 @@ const testAPI = async () => {
       console.log("\n4. Testing protected route...");
       const token = loginResponse.data.token;
       const profileResponse = await axios.get(`${API_BASE}/api/auth/me`, {
-        headers: {Authorization: `Bearer ${token}`},
+        headers: { Authorization: `Bearer ${token}` },
       });
       console.log("✅ Profile fetch successful:", profileResponse.data.user);
     } catch (registerError) {

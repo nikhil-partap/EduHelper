@@ -5,7 +5,7 @@ const API_BASE = "http://localhost:5000";
 
 const testClassAPI = async () => {
   try {
-    console.log("🧪 Testing LeetClass - Class Management API...\n");
+    console.log("🧪 Testing EduHelper - Class Management API...\n");
 
     // Test 1: Health check
     console.log("1. Testing health endpoint...");
@@ -88,7 +88,7 @@ const testClassAPI = async () => {
       `${API_BASE}/api/class/create`,
       classData,
       {
-        headers: {Authorization: `Bearer ${teacherToken}`},
+        headers: { Authorization: `Bearer ${teacherToken}` },
       }
     );
     console.log("✅ Class created:", {
@@ -104,9 +104,9 @@ const testClassAPI = async () => {
     console.log("\n5. Testing student joining class...");
     const joinResponse = await axios.post(
       `${API_BASE}/api/class/join`,
-      {classCode},
+      { classCode },
       {
-        headers: {Authorization: `Bearer ${studentToken}`},
+        headers: { Authorization: `Bearer ${studentToken}` },
       }
     );
     console.log("✅ Student joined class:", joinResponse.data.message);
@@ -119,7 +119,7 @@ const testClassAPI = async () => {
     const classDetailsResponse = await axios.get(
       `${API_BASE}/api/class/${classId}`,
       {
-        headers: {Authorization: `Bearer ${teacherToken}`},
+        headers: { Authorization: `Bearer ${teacherToken}` },
       }
     );
 
@@ -140,7 +140,7 @@ const testClassAPI = async () => {
     const teacherClassesResponse = await axios.get(
       `${API_BASE}/api/class/teacher`,
       {
-        headers: {Authorization: `Bearer ${teacherToken}`},
+        headers: { Authorization: `Bearer ${teacherToken}` },
       }
     );
     console.log(
@@ -153,7 +153,7 @@ const testClassAPI = async () => {
     const studentClassesResponse = await axios.get(
       `${API_BASE}/api/class/student`,
       {
-        headers: {Authorization: `Bearer ${studentToken}`},
+        headers: { Authorization: `Bearer ${studentToken}` },
       }
     );
     console.log(
