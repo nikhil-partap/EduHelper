@@ -24,6 +24,7 @@ const Navigation = () => {
       ? [
           {name: "Dashboard", href: "/dashboard", icon: "🏠"},
           {name: "My Classes", href: "/classes", icon: "📚"},
+          {name: "Schedule", href: "/schedule", icon: "📅"},
           {name: "Attendance", href: "/attendance", icon: "📊"},
           {name: "Quizzes", href: "/quizzes", icon: "📝"},
           {name: "Generate Quiz", href: "/quiz/generate", icon: "🤖"},
@@ -31,9 +32,9 @@ const Navigation = () => {
       : [
           {name: "Dashboard", href: "/dashboard", icon: "🏠"},
           {name: "My Classes", href: "/classes", icon: "📚"},
+          {name: "Schedule", href: "/schedule", icon: "📅"},
           {name: "My Attendance", href: "/my-attendance", icon: "📊"},
           {name: "Quizzes", href: "/quizzes", icon: "📝"},
-          {name: "Study Planner", href: "/study-planner", icon: "📅"},
           {name: "Grades", href: "/grades", icon: "🎯"},
         ];
 
