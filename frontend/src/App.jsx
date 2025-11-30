@@ -219,11 +219,7 @@ const AppContent = () => {
             path="/grades"
             element={
               <ProtectedRoute>
-                <ComingSoon
-                  title="Grades"
-                  description="View your grades and academic progress"
-                  icon="🎯"
-                />
+                <Grades />
               </ProtectedRoute>
             }
           />
@@ -231,11 +227,7 @@ const AppContent = () => {
             path="/schedule"
             element={
               <ProtectedRoute>
-                <ComingSoon
-                  title="Class Schedule"
-                  description="View your class timetable and upcoming sessions"
-                  icon="📅"
-                />
+                <Schedule />
               </ProtectedRoute>
             }
           />
