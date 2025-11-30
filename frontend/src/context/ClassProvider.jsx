@@ -44,6 +44,8 @@ const classReducer = (state, action) => {
       return {
         ...state,
         selectedClass: action.payload,
+        loading: false,
+        error: null,
       };
 
     case "CLEAR_ERROR":

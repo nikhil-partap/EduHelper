@@ -1,6 +1,6 @@
 // File: /backend/controllers/classController.js
 
-import {ReturnDocument} from "mongodb";
+import { ReturnDocument } from "mongodb";
 import Class from "../models/Class.js";
 
 // @desc    Teacher creates a new class
@@ -11,14 +11,14 @@ export const createClass = async (req, res, next) => {
     if (req.user.role !== "teacher") {
       return res
         .status(403)
-        .json({Message: "Only teachers can create classes"});
+        .json({ Message: "Only teachers can create classes" });
     }
 
-    const {className, subject, board} = req.body;
+    const { className, subject, board } = req.body;
     if (!className || !subject || !board) {
       return res
         .status(400)
-        .json({message: "className, subject, and board are required"});
+        .json({ message: "className, subject, and board are required" });
     }
 
     const newClass = await Class.create({
@@ -27,7 +27,7 @@ export const createClass = async (req, res, next) => {
       board,
       teacherId: req.user._id,
     });
-    res.status(201).json({class: newClass});
+    res.status(201).json({ class: newClass });
   } catch (error) {
     next(error);
   }
@@ -39,11 +39,14 @@ export const createClass = async (req, res, next) => {
 export const getTeacherClasses = async (req, res, next) => {
   try {
     if (req.user.role !== "teacher") {
-      return res.status(403).json({message: "Access denied"});
+      return res.status(403).json({ message: "Access denied" });
     }
 
-    const classes = await Class.find({teacherId: req.user._id});
-    res.status(200).json({classes});
+    const classes = await Class.find({ teacherId: req.user._id }).populate(
+      "students",
+      "name email rollNumber"
+    );
+    res.status(200).json({ classes });
   } catch (error) {
     next(error);
   }
@@ -55,27 +58,29 @@ export const getTeacherClasses = async (req, res, next) => {
 export const joinClass = async (req, res, next) => {
   try {
     if (req.user.role !== "student") {
-      return res.status(403).json({message: "Only students can join classes"});
+      return res
+        .status(403)
+        .json({ message: "Only students can join classes" });
     }
 
-    const {classCode} = req.body;
+    const { classCode } = req.body;
     if (!classCode) {
-      return res.status(400).json({message: "classCode is required"});
+      return res.status(400).json({ message: "classCode is required" });
     }
 
-    const foundClass = await Class.findOne({classCode});
+    const foundClass = await Class.findOne({ classCode });
     if (!foundClass) {
-      return res.status(404).json({message: "Class not found"});
+      return res.status(404).json({ message: "Class not found" });
     }
 
     const alreadyJoined = foundClass.students.includes(req.user._id);
     if (alreadyJoined) {
-      return res.status(200).json({message: "Already joined"});
+      return res.status(200).json({ message: "Already joined" });
     }
     foundClass.students.push(req.user._id);
     await foundClass.save();
 
-    res.status(200).json({message: "joined class successfully"});
+    res.status(200).json({ message: "joined class successfully" });
   } catch (error) {
     next(error);
   }
@@ -87,11 +92,13 @@ export const joinClass = async (req, res, next) => {
 export const getStudentClasses = async (req, res, next) => {
   try {
     if (req.user.role !== "student") {
-      return res.status(403).json({message: "Access denied"});
+      return res.status(403).json({ message: "Access denied" });
     }
 
-    const classes = await Class.find({students: req.user._id});
-    res.status(200).json({classes});
+    const classes = await Class.find({ students: req.user._id })
+      .populate("teacherId", "name email")
+      .populate("students", "name email rollNumber");
+    res.status(200).json({ classes });
   } catch (error) {
     next(error);
   }
@@ -107,7 +114,7 @@ export const getClassDetails = async (req, res, next) => {
       .populate("students", "id name email");
 
     if (!foundClass) {
-      return res.status(404).json({message: "Class not found"});
+      return res.status(404).json({ message: "Class not found" });
     }
 
     // Only teacher owner or a joined student may view
@@ -119,10 +126,10 @@ export const getClassDetails = async (req, res, next) => {
       foundClass.students.some((s) => s._id.equals(req.user._id));
 
     if (!isTeacherOwner && !isStudentMember) {
-      return res.status(403).json({message: "Access denied"});
+      return res.status(403).json({ message: "Access denied" });
     }
 
-    res.status(200).json({class: foundClass});
+    res.status(200).json({ class: foundClass });
   } catch (error) {
     next(error);
   }
