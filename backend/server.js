@@ -7,6 +7,7 @@ import connectDB from "./config/db.js"; // Note the .js extension for ESM
 import authRoutes from "./routes/auth.js";
 import classRoutes from "./routes/class.js";
 import attendanceRoutes from "./routes/attendance.js";
+import quizRoutes from "./routes/quiz.js";
 
 // Load environment variables
 dotenv.config();
@@ -62,6 +63,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/class", classRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/quiz", quizRoutes);
 
 // --- Error Handling ---
 
