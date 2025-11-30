@@ -18,6 +18,7 @@ import {
 import {TeacherClasses, StudentClasses, ComingSoon} from "./pages";
 import ClassDetails from "./pages/ClassDetails";
 import Attendance from "./pages/Attendance";
+import StudentAttendance from "./pages/StudentAttendance";
 import QuizGenerator from "./pages/QuizGenerator";
 import Quizzes from "./pages/Quizzes";
 import TakeQuiz from "./pages/TakeQuiz";
@@ -61,6 +62,17 @@ const ClassesPage = () => {
     return <TeacherClasses />;
   } else {
     return <StudentClasses />;
+  }
+};
+
+// Attendance Page Component (renders based on user role)
+const AttendancePage = () => {
+  const {user} = useAuth();
+
+  if (user?.role === "teacher") {
+    return <Attendance />;
+  } else {
+    return <StudentAttendance />;
   }
 };
 
@@ -133,7 +145,7 @@ const AppContent = () => {
             path="/attendance"
             element={
               <ProtectedRoute>
-                <Attendance />
+                <AttendancePage />
               </ProtectedRoute>
             }
           />

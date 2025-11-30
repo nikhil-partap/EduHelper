@@ -109,12 +109,13 @@ const Attendance = () => {
 
   const isTeacher = user?.role === "teacher";
 
+  // Students should use StudentAttendance component instead
   if (!isTeacher) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Alert
           type="info"
-          message="Attendance tracking is available for teachers only."
+          message="This page is for teachers to mark attendance. Students can view their attendance from the navigation menu."
         />
       </div>
     );
