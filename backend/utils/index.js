@@ -9,9 +9,9 @@ export const formatResponse = (
 ) => {
   return {
     success,
-    ...(data && {data}),
-    ...(message && {message}),
-    ...(error && {error}),
+    ...(data && { data }),
+    ...(message && { message }),
+    ...(error && { error }),
   };
 };
 

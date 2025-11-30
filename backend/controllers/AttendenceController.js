@@ -168,18 +168,20 @@ export const uploadAttendance = async (req, res, next) => {
     updated = bulkResult.modifiedCount || 0;
 
     res.status(200).json({
+      // final msg of attendance created that also return the no of enteries created ,updated , all the errors in one go
       message: "Attendance upload complete",
       created,
       updated,
       errors,
     });
   } catch (err) {
-    // handle duplicate key error (rare because upsert uses the same unique key)
+    // handle duplicate key error (rare because upsert uses the same unique key)  (the unique key is defined in models/attendance.js )
     if (err.code === 11000) {
       return res.status(409).json({
         message: "Duplicate attendance entry detected",
         error: err.message,
       });
+      // purpose - To catch MongoDB duplicate key errors and return a clean response instead of crashing the API.
     }
     next(err);
   }
@@ -204,7 +206,10 @@ export const markAttendance = async (req, res, next) => {
     }
 
     const classDoc = await Class.findById(classId);
-    if (!classDoc) return res.status(404).json({ message: "Class not found" });
+    if (!classDoc)
+      return res
+        .status(404)
+        .json({ message: "Class not found(check the classId you entered)" });
     if (!classDoc.teacherId.equals(req.user._id))
       return res
         .status(403)
@@ -212,7 +217,8 @@ export const markAttendance = async (req, res, next) => {
 
     // ✅ Validate that student is enrolled in this class
     const isEnrolled = classDoc.students.some(
-      (id) => id.toString() === studentId.toString()
+      // classDoc.students contains an array of ObjectIds of students enrolled in the class.    // .some() loops through each ID in that array
+      (id) => id.toString() === studentId.toString() // if any students
     );
     if (!isEnrolled) {
       return res
@@ -229,9 +235,12 @@ export const markAttendance = async (req, res, next) => {
       updatedAt: new Date(),
     };
     const options = { new: true, upsert: true, setDefaultsOnInsert: true };
+    // upsert:true -If no document matches your query, a new document is created using the query and the update data.
+    // new:true - The operation returns the updated document after the modifications have been applied (the default is to return the original document).
+    // setDefaultsOnInsert - It applies any default values defined in your Mongoose schema to the fields of the newly created document.
 
-    const record = await Attendance.findOneAndUpdate(filter, update, options);
-
+    const record = await Attendance.findOneAndUpdate(filter, update, options); // what i have done here is first i have used the filter to find the student and then with update i have upateded the old data of the student with the new data and
+    //
     res.status(200).json({ attendance: record });
   } catch (err) {
     if (err.code === 11000) {
