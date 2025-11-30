@@ -63,23 +63,23 @@ const ClassDetails = () => {
       <div className="mb-8">
         <button
           onClick={() => navigate(-1)}
-          className="mb-4 text-blue-600 hover:text-blue-800 flex items-center gap-2"
+          className="mb-4 text-blue-400 hover:text-blue-300 flex items-center gap-2"
         >
           ← Back to Classes
         </button>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold text-white mb-2">
                 {classData.className}
               </h1>
-              <p className="text-lg text-gray-600 mb-1">{classData.subject}</p>
-              <p className="text-sm text-gray-500">{classData.board}</p>
+              <p className="text-lg text-gray-300 mb-1">{classData.subject}</p>
+              <p className="text-sm text-gray-400">{classData.board}</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-600">Class Code</p>
-              <p className="font-mono text-xl font-bold text-blue-600">
+              <p className="text-sm text-gray-400">Class Code</p>
+              <p className="font-mono text-xl font-bold text-blue-400">
                 {classData.classCode}
               </p>
             </div>
