@@ -70,23 +70,31 @@ export const quizAPI = {
 
   // Student endpoints
   getQuiz: (quizId) => api.get(`/api/quiz/${quizId}`),
-  submitQuiz: (quizId, answers) =>
-    api.post(`/api/quiz/${quizId}/submit`, {answers}),
+  submitQuiz: (quizId, answers, timeTaken = null) =>
+    api.post(`/api/quiz/${quizId}/submit`, {quizId, answers, timeTaken}),
   getStudentAttempts: (classId, studentId) =>
     api.get(`/api/quiz/attempts/${classId}/${studentId}`),
 };
 
 // Study Planner API calls
 export const studyPlannerAPI = {
-  // Student endpoints
-  createPlan: (data) => api.post("/api/study-planner", data),
-  getMyPlans: () => api.get("/api/study-planner/my-plans"),
-  updateProgress: (planId, data) =>
-    api.patch(`/api/study-planner/${planId}/progress`, data),
-  deletePlan: (planId) => api.delete(`/api/study-planner/${planId}`),
+  // Teacher endpoints
+  generatePlanner: (data) => api.post("/api/studyplanner/generate", data),
 
   // Shared endpoints
-  getPlanDetails: (planId) => api.get(`/api/study-planner/${planId}`),
+  getPlanner: (classId) => api.get(`/api/studyplanner/${classId}`),
+
+  // Teacher-only chapter/holiday/exam management
+  updateChapter: (classId, chapterIndex, data) =>
+    api.put(`/api/studyplanner/${classId}/chapter/${chapterIndex}`, data),
+  addHoliday: (classId, date) =>
+    api.post(`/api/studyplanner/${classId}/holiday`, {date}),
+  removeHoliday: (classId, date) =>
+    api.delete(`/api/studyplanner/${classId}/holiday/${date}`),
+  addExamDate: (classId, examName, date) =>
+    api.post(`/api/studyplanner/${classId}/exam`, {examName, date}),
+  updateExamDate: (classId, examName, newDate) =>
+    api.put(`/api/studyplanner/${classId}/exam/${examName}`, {newDate}),
 };
 
 export default api;

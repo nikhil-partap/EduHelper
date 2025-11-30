@@ -49,7 +49,13 @@ const TakeQuiz = () => {
     try {
       setSubmitting(true);
       const response = await quizAPI.submitQuiz(quizId, answers);
-      setResult(response.data.result);
+      // Backend returns {score, totalMarks, percentage, attemptId}
+      setResult({
+        score: response.data.score,
+        totalMarks: response.data.totalMarks,
+        percentage: response.data.percentage,
+        attemptId: response.data.attemptId,
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Failed to submit quiz");
     } finally {

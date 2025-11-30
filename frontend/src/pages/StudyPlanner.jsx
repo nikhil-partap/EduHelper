@@ -26,8 +26,13 @@ const StudyPlanner = () => {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const response = await studyPlannerAPI.getMyPlans();
-      setPlans(response.data.plans || []);
+      // Note: Study planner is class-based, not user-based
+      // This needs to be refactored to fetch planner by classId
+      // For now, showing empty state
+      setPlans([]);
+      setError(
+        "Study planner is accessed through class details. Please select a class first."
+      );
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch study plans");
     } finally {
