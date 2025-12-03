@@ -17,7 +17,7 @@ The project showcases a complete understanding of full-stack development, includ
 ### Backend Technologies
 
 - **Node.js with Express.js**: The backend server is built using Express.js 5.x, providing a robust RESTful API architecture
-- **MongoDB with Mongoose**: NoSQL database for flexible data storage with Mongoose ODM for schema validation and data modeling
+- **MongoDB Atlas with Mongoose**: NoSQL database for flexible data storage with Mongoose ODM for schema validation and data modeling
 - **JWT Authentication**: Secure token-based authentication using JSON Web Tokens with bcryptjs for password hashing
 - **AI Integration**: Integration with Google's Generative AI (Gemini) and OpenAI for intelligent quiz generation
 - **ES Modules**: Modern JavaScript module system for cleaner, more maintainable code
@@ -39,7 +39,6 @@ The project follows a monorepo structure with separate frontend and backend dire
 Class-Pilot/
 ├── backend/          # Express.js API server
 ├── frontend/         # React application
-├── .kiro/           # Development configuration
 └── README.md        # This file
 ```
 
