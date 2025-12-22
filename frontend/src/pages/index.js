@@ -1,0 +1,12 @@
+export {default as ComingSoon} from "./ComingSoon";
+export {default as StudentClasses} from "./StudentClasses";
+export {default as TeacherClasses} from "./TeacherClasses";
+export {default as ClassDetails} from "./ClassDetails";
+export {default as Attendance} from "./Attendance";
+export {default as StudentAttendance} from "./StudentAttendance";
+export {default as QuizGenerator} from "./QuizGenerator";
+export {default as Quizzes} from "./Quizzes";
+export {default as TakeQuiz} from "./TakeQuiz";
+export {default as StudyPlanner} from "./StudyPlanner";
+export {default as Grades} from "./Grades";
+export {default as Schedule} from "./Schedule";
