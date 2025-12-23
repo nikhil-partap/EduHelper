@@ -1,8 +1,11 @@
 import {useAuth} from "../../hooks/useAuth";
 import FeatureCard from "./FeatureCard";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const {user} = useAuth();
+  const navigate = useNavigate();
+
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -65,10 +68,14 @@ const Dashboard = () => {
                   color="blue"
                 />
                 <FeatureCard
-                  title="Student Progress"
+                  title="Report"
                   description="Monitor student performance and provide detailed feedback."
                   icon="📊"
                   color="green"
+                  disabled={false}
+                  onClick={() => {navigate("/reports");
+                    console.log("REPORT CLICKED");
+                  }}
                 />
                 <FeatureCard
                   title="Assignments"
@@ -83,7 +90,7 @@ const Dashboard = () => {
                   color="orange"
                 />
                 <FeatureCard
-                  title="Communication"
+                  title="Announcements"
                   description="Send announcements and communicate with students."
                   icon="💬"
                   color="blue"
