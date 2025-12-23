@@ -29,6 +29,7 @@ import QuizGenerator from "./pages/QuizGenerator";
 import Quizzes from "./pages/Quizzes";
 import TakeQuiz from "./pages/TakeQuiz";
 import StudyPlanner from "./pages/StudyPlanner";
+import StudentReports from "./pages/reports/StudentReports";
 
 // Protected Route Component
 const ProtectedRoute = ({children}) => {
@@ -207,11 +208,7 @@ const AppContent = () => {
             path="/reports"
             element={
               <ProtectedRoute>
-                <ComingSoon
-                  title="Reports & Analytics"
-                  description="View detailed reports and student analytics"
-                  icon="📊"
-                />
+                <StudentReports />
               </ProtectedRoute>
             }
           />
