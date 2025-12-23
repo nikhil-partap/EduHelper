@@ -65,7 +65,7 @@ const Dashboard = () => {
                   color="blue"
                 />
                 <FeatureCard
-                  title="Student Progress"
+                  title="Report"
                   description="Monitor student performance and provide detailed feedback."
                   icon="📊"
                   color="green"
@@ -83,7 +83,7 @@ const Dashboard = () => {
                   color="orange"
                 />
                 <FeatureCard
-                  title="Communication"
+                  title="Announcements"
                   description="Send announcements and communicate with students."
                   icon="💬"
                   color="blue"
