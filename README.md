@@ -8,7 +8,7 @@ Class Pilot is a full-stack web application designed to revolutionize classroom 
 
 ## Project Overview
 
-Class Pilot addresses the real-world challenge of managing educational workflows in a digital environment. The platform serves two distinct user roles—teachers and students—each with tailored features and interfaces. Teachers can create and manage classes, track student attendance, generate AI-powered quizzes, and monitor student performance. Students can join classes, view their schedules, take quizzes, track their grades, and plan their study time effectively.
+Class Pilot addresses the real-world challenge of managing educational workflows in a digital environment. The platform serves two distinct user roles—teachers and students—each with tailored features and interfaces. Teachers can create and manage classes, track student attendance, **~~generate AI-powered quizzes, and monitor student performance~~**. Students can join classes, view their schedules, take quizzes, track their grades, and plan their study time effectively.
 
 The project showcases a complete understanding of full-stack development, including frontend user interface design, backend API development, database schema design, authentication and authorization, and integration of third-party AI services for enhanced functionality.
 
@@ -509,5 +509,5 @@ Building Class Pilot has been an incredible learning experience, pushing me to s
 ---
 
 **Author**: Nikhil Pratap Singh  
-**Course**: CS50x 2024  
+**Course**: CS50x 2025  
 **Project**: Final Project - Class Pilot
