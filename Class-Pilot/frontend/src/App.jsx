@@ -33,7 +33,7 @@ import QuizGenerator from "./pages/QuizGenerator";
 import Quizzes from "./pages/Quizzes";
 import TakeQuiz from "./pages/TakeQuiz";
 import StudyPlanner from "./pages/StudyPlanner";
-import StudentReports from "./pages/reports/StudentReports";
+import StudentReports from "./pages/StudentReports";
 
 // Protected Route Component
 const ProtectedRoute = ({children}) => {
