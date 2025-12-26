@@ -4,9 +4,16 @@ node_modules/
 # Environment variables
 .env
 
+# Service account keys (NEVER commit these!)
+service-account-key.json
+*.json.key
+*-credentials.json
+
 # Logs
 *.log
 
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+service-account-key.json
