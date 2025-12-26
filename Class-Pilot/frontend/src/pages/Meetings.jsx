@@ -19,12 +19,14 @@ const Meetings = () => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (selectedClass) {
       fetchClassMeetings();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClass]);
 
   const fetchData = async () => {

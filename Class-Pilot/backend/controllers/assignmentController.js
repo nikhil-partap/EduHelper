@@ -1,6 +1,5 @@
 // File: /backend/controllers/assignmentController.js
 
-import mongoose from "mongoose";
 import Assignment from "../models/Assignment.js";
 import Class from "../models/Class.js";
 import Grade from "../models/Grade.js";
@@ -57,7 +56,7 @@ export const createAssignment = async (req, res, next) => {
       instructions,
       dueDate: new Date(dueDate),
       totalMarks,
-      allowLateSubmission: allowLateSubmission || true,
+      allowLateSubmission: allowLateSubmission !== false,
       latePenalty: latePenalty || 0,
     });
 

@@ -1,131 +1,165 @@
 import {useState, useEffect} from "react";
 import {useAuth} from "../hooks/useAuth";
-import {studyPlannerAPI} from "../services/api";
+import {classAPI, studyPlannerAPI} from "../services/api";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
 
 const StudyPlanner = () => {
   const {user} = useAuth();
-  const [plans, setPlans] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [planner, setPlanner] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [plannerLoading, setPlannerLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [formData, setFormData] = useState({
-    topic: "",
-    startDate: new Date().toISOString().split("T")[0],
-    durationDays: 7,
-    dailyGoal: "",
-    holidays: [],
+
+  // Generate planner form state (teacher only)
+  const [showGenerateForm, setShowGenerateForm] = useState(false);
+  const [generateForm, setGenerateForm] = useState({
+    board: "CBSE",
+    className: "10th",
+    subject: "Mathematics",
   });
+  const [generating, setGenerating] = useState(false);
 
+  const isTeacher = user?.role === "teacher";
+
+  // Fetch classes on mount
   useEffect(() => {
-    fetchPlans();
-  }, []);
+    fetchClasses();
+  }, [user]);
 
-  const fetchPlans = async () => {
+  // Fetch planner when class is selected
+  useEffect(() => {
+    if (selectedClassId) {
+      fetchPlanner(selectedClassId);
+    } else {
+      setPlanner(null);
+    }
+  }, [selectedClassId]);
+
+  const fetchClasses = async () => {
     try {
       setLoading(true);
-      // Note: Study planner is class-based, not user-based
-      // This needs to be refactored to fetch planner by classId
-      // For now, showing empty state
-      setPlans([]);
-      setError(
-        "Study planner is accessed through class details. Please select a class first."
-      );
+      const response = isTeacher
+        ? await classAPI.getTeacherClasses()
+        : await classAPI.getStudentClasses();
+      setClasses(response.data.data || []);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch study plans");
+      setError(err.response?.data?.message || "Failed to fetch classes");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    const {name, value} = e.target;
-    setFormData((prev) => ({...prev, [name]: value}));
+  const fetchPlanner = async (classId) => {
+    try {
+      setPlannerLoading(true);
+      setError(null);
+      const response = await studyPlannerAPI.getPlanner(classId);
+      setPlanner(response.data.planner);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setPlanner(null); // No planner exists yet
+      } else {
+        setError(
+          err.response?.data?.message || "Failed to fetch study planner"
+        );
+      }
+    } finally {
+      setPlannerLoading(false);
+    }
   };
 
-  const handleCreatePlan = async (e) => {
+  const handleGeneratePlanner = async (e) => {
     e.preventDefault();
+    if (!selectedClassId) {
+      setError("Please select a class first");
+      return;
+    }
+
     try {
-      const response = await studyPlannerAPI.createPlan(formData);
-      setPlans([response.data.plan, ...plans]);
-      setSuccess("Study plan created successfully!");
-      setShowCreateForm(false);
-      setFormData({
-        topic: "",
-        startDate: new Date().toISOString().split("T")[0],
-        durationDays: 7,
-        dailyGoal: "",
-        holidays: [],
+      setGenerating(true);
+      setError(null);
+      const response = await studyPlannerAPI.generatePlanner({
+        classId: selectedClassId,
+        ...generateForm,
       });
+      setPlanner(response.data.planner);
+      setSuccess("Study planner generated successfully!");
+      setShowGenerateForm(false);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create study plan");
+      setError(
+        err.response?.data?.message || "Failed to generate study planner"
+      );
+    } finally {
+      setGenerating(false);
     }
   };
 
-  const handleUpdateProgress = async (planId, completed) => {
+  const handleAddHoliday = async (date) => {
     try {
-      await studyPlannerAPI.updateProgress(planId, {completed});
-      setPlans(plans.map((p) => (p._id === planId ? {...p, completed} : p)));
-      setSuccess("Progress updated!");
+      const response = await studyPlannerAPI.addHoliday(selectedClassId, date);
+      setPlanner(response.data.planner);
+      setSuccess("Holiday added");
       setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to update progress");
+      setError(err.response?.data?.message || "Failed to add holiday");
     }
   };
 
-  const handleDeletePlan = async (planId) => {
-    if (!confirm("Are you sure you want to delete this study plan?")) return;
-
+  const handleAddExam = async (examName, date) => {
     try {
-      await studyPlannerAPI.deletePlan(planId);
-      setPlans(plans.filter((p) => p._id !== planId));
-      setSuccess("Study plan deleted");
+      const response = await studyPlannerAPI.addExamDate(
+        selectedClassId,
+        examName,
+        date
+      );
+      setPlanner(response.data.planner);
+      setSuccess("Exam date added");
       setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete plan");
+      setError(err.response?.data?.message || "Failed to add exam date");
     }
   };
 
-  const calculateProgress = (plan) => {
-    return Math.round((plan.completed / plan.durationDays) * 100);
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
-  const getDaysRemaining = (endDate) => {
-    const end = new Date(endDate);
+  const getChapterStatus = (chapter) => {
     const today = new Date();
-    const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
-    return diff;
+    const start = new Date(chapter.startDate);
+    const end = new Date(chapter.endDate);
+
+    if (today < start) return {status: "upcoming", color: "bg-gray-600"};
+    if (today > end) return {status: "completed", color: "bg-green-600"};
+    return {status: "in-progress", color: "bg-blue-600"};
   };
 
-  if (user?.role !== "student") {
+  if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Alert
-          type="info"
-          message="Study planner is available for students only."
-        />
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Study Planner</h1>
-          <p className="mt-2 text-gray-400">
-            Plan and track your study schedule
-          </p>
-        </div>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium"
-        >
-          Create New Plan
-        </button>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white">Study Planner</h1>
+        <p className="mt-2 text-gray-400">
+          {isTeacher
+            ? "Generate and manage AI-powered study plans for your classes"
+            : "View your class study schedule"}
+        </p>
       </div>
 
       {error && (
@@ -139,86 +173,108 @@ const StudyPlanner = () => {
         />
       )}
 
-      {/* Create Plan Form */}
-      {showCreateForm && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
+      {/* Class Selection */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-6">
+        <label className="block text-sm font-medium text-gray-200 mb-2">
+          Select Class
+        </label>
+        <select
+          value={selectedClassId}
+          onChange={(e) => setSelectedClassId(e.target.value)}
+          className="w-full md:w-1/2 px-4 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">-- Select a class --</option>
+          {classes.map((cls) => (
+            <option key={cls._id} value={cls._id}>
+              {cls.name}
+            </option>
+          ))}
+        </select>
+
+        {isTeacher && selectedClassId && !planner && (
+          <button
+            onClick={() => setShowGenerateForm(true)}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium"
+          >
+            Generate Study Planner with AI
+          </button>
+        )}
+      </div>
+
+      {/* Generate Planner Form (Teacher Only) */}
+      {showGenerateForm && isTeacher && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">
-            Create Study Plan
+            Generate Study Planner
           </h2>
-
-          <form onSubmit={handleCreatePlan} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleGeneratePlanner} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Topic *
+                  Board
+                </label>
+                <select
+                  value={generateForm.board}
+                  onChange={(e) =>
+                    setGenerateForm({...generateForm, board: e.target.value})
+                  }
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md"
+                >
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="State Board">State Board</option>
+                  <option value="IB">IB</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">
+                  Class
+                </label>
+                <select
+                  value={generateForm.className}
+                  onChange={(e) =>
+                    setGenerateForm({
+                      ...generateForm,
+                      className: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md"
+                >
+                  {["6th", "7th", "8th", "9th", "10th", "11th", "12th"].map(
+                    (c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">
+                  Subject
                 </label>
                 <input
                   type="text"
-                  name="topic"
-                  value={formData.topic}
-                  onChange={handleChange}
-                  placeholder="e.g., Mathematics Final Exam"
-                  required
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Start Date *
-                </label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Duration (Working Days) *
-                </label>
-                <input
-                  type="number"
-                  name="durationDays"
-                  value={formData.durationDays}
-                  onChange={handleChange}
-                  min="1"
-                  max="365"
-                  required
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Daily Goal *
-                </label>
-                <input
-                  type="text"
-                  name="dailyGoal"
-                  value={formData.dailyGoal}
-                  onChange={handleChange}
-                  placeholder="e.g., Study 2 chapters"
-                  required
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={generateForm.subject}
+                  onChange={(e) =>
+                    setGenerateForm({...generateForm, subject: e.target.value})
+                  }
+                  placeholder="e.g., Mathematics"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md"
                 />
               </div>
             </div>
-
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-medium"
+                disabled={generating}
+                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-2 rounded-md font-medium"
               >
-                Create Plan
+                {generating ? "Generating..." : "Generate with AI"}
               </button>
               <button
                 type="button"
-                onClick={() => setShowCreateForm(false)}
+                onClick={() => setShowGenerateForm(false)}
                 className="bg-zinc-700 hover:bg-zinc-600 text-white px-6 py-2 rounded-md font-medium"
               >
                 Cancel
@@ -228,117 +284,175 @@ const StudyPlanner = () => {
         </div>
       )}
 
-      {/* Study Plans List */}
-      {loading ? (
+      {/* Planner Loading */}
+      {plannerLoading && (
         <div className="flex justify-center py-12">
-          <LoadingSpinner size="lg" text="Loading study plans..." />
+          <LoadingSpinner size="lg" text="Loading study planner..." />
         </div>
-      ) : plans.length === 0 ? (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📅</div>
-            <h3 className="text-lg font-medium text-white mb-2">
-              No Study Plans Yet
-            </h3>
-            <p className="text-gray-400 mb-6">
-              Create your first study plan to get started
-            </p>
+      )}
+
+      {/* No Class Selected */}
+      {!selectedClassId && !plannerLoading && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
+          <div className="text-6xl mb-4">📚</div>
+          <h3 className="text-lg font-medium text-white mb-2">
+            Select a Class
+          </h3>
+          <p className="text-gray-400">
+            Choose a class above to view or generate its study planner
+          </p>
+        </div>
+      )}
+
+      {/* No Planner Exists */}
+      {selectedClassId && !planner && !plannerLoading && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-12 text-center">
+          <div className="text-6xl mb-4">📅</div>
+          <h3 className="text-lg font-medium text-white mb-2">
+            No Study Planner Yet
+          </h3>
+          <p className="text-gray-400 mb-4">
+            {isTeacher
+              ? "Generate an AI-powered study planner for this class"
+              : "Your teacher hasn't created a study planner for this class yet"}
+          </p>
+          {isTeacher && (
             <button
-              onClick={() => setShowCreateForm(true)}
+              onClick={() => setShowGenerateForm(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium"
             >
-              Create Study Plan
+              Generate Study Planner
             </button>
-          </div>
+          )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {plans.map((plan) => {
-            const progress = calculateProgress(plan);
-            const daysRemaining = getDaysRemaining(plan.endDate);
-            const isCompleted = plan.completed >= plan.durationDays;
+      )}
 
-            return (
-              <div
-                key={plan._id}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6"
-              >
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    {plan.topic}
-                  </h3>
-                  <p className="text-sm text-gray-400">{plan.dailyGoal}</p>
-                </div>
+      {/* Planner Display */}
+      {planner && !plannerLoading && (
+        <div className="space-y-6">
+          {/* Planner Info */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+            <div className="flex flex-wrap gap-4 text-sm">
+              <span className="bg-blue-900 text-blue-200 px-3 py-1 rounded-full">
+                {planner.board}
+              </span>
+              <span className="bg-purple-900 text-purple-200 px-3 py-1 rounded-full">
+                Class {planner.className}
+              </span>
+              <span className="text-gray-400">
+                Generated: {formatDate(planner.generatedAt)}
+              </span>
+            </div>
+          </div>
 
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Progress:</span>
-                    <span className="text-white font-medium">
-                      {plan.completed}/{plan.durationDays} days
-                    </span>
-                  </div>
-
-                  <div className="w-full bg-zinc-700 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${
-                        isCompleted ? "bg-green-600" : "bg-blue-600"
-                      }`}
-                      style={{width: `${Math.min(progress, 100)}%`}}
-                    ></div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Days Remaining:</span>
-                    <span
-                      className={`font-medium ${
-                        daysRemaining < 0
-                          ? "text-red-400"
-                          : daysRemaining < 3
-                          ? "text-yellow-400"
-                          : "text-green-400"
-                      }`}
-                    >
-                      {daysRemaining < 0 ? "Overdue" : `${daysRemaining} days`}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">End Date:</span>
-                    <span className="text-gray-300">
-                      {new Date(plan.endDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  {!isCompleted && (
-                    <button
-                      onClick={() =>
-                        handleUpdateProgress(plan._id, plan.completed + 1)
-                      }
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium"
-                    >
-                      Mark Day Complete
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDeletePlan(plan._id)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium"
+          {/* Chapters Timeline */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">
+              Chapters ({planner.chapters?.length || 0})
+            </h2>
+            <div className="space-y-3">
+              {planner.chapters?.map((chapter, index) => {
+                const {status, color} = getChapterStatus(chapter);
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center gap-4 p-4 bg-zinc-800 rounded-lg"
                   >
-                    Delete
-                  </button>
-                </div>
-
-                {isCompleted && (
-                  <div className="mt-3 bg-green-900 border border-green-700 rounded p-2 text-center">
-                    <span className="text-green-400 font-medium text-sm">
-                      ✓ Completed!
+                    <div
+                      className={`w-3 h-3 rounded-full ${color}`}
+                      title={status}
+                    ></div>
+                    <div className="flex-1">
+                      <h3 className="text-white font-medium">
+                        {index + 1}. {chapter.chapterName}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        {formatDate(chapter.startDate)} -{" "}
+                        {formatDate(chapter.endDate)}
+                        <span className="ml-2 text-gray-500">
+                          ({chapter.durationDays} days)
+                        </span>
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                        status === "completed"
+                          ? "bg-green-900 text-green-300"
+                          : status === "in-progress"
+                          ? "bg-blue-900 text-blue-300"
+                          : "bg-gray-700 text-gray-300"
+                      }`}
+                    >
+                      {status}
                     </span>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Holidays & Exams (Side by Side) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Holidays */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-white mb-4">
+                Holidays ({planner.holidays?.length || 0})
+              </h2>
+              {planner.holidays?.length > 0 ? (
+                <ul className="space-y-2">
+                  {planner.holidays.map((date, i) => (
+                    <li key={i} className="text-gray-300 text-sm">
+                      📅 {formatDate(date)}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500 text-sm">No holidays added</p>
+              )}
+              {isTeacher && (
+                <button
+                  onClick={() => {
+                    const date = prompt("Enter holiday date (YYYY-MM-DD):");
+                    if (date) handleAddHoliday(date);
+                  }}
+                  className="mt-4 text-sm text-blue-400 hover:text-blue-300"
+                >
+                  + Add Holiday
+                </button>
+              )}
+            </div>
+
+            {/* Exam Dates */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-white mb-4">
+                Exam Dates ({planner.examDates?.length || 0})
+              </h2>
+              {planner.examDates?.length > 0 ? (
+                <ul className="space-y-2">
+                  {planner.examDates.map((exam, i) => (
+                    <li key={i} className="text-gray-300 text-sm">
+                      📝 {exam.examName} - {formatDate(exam.date)}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500 text-sm">No exam dates added</p>
+              )}
+              {isTeacher && (
+                <button
+                  onClick={() => {
+                    const examName = prompt("Enter exam name:");
+                    if (!examName) return;
+                    const date = prompt("Enter exam date (YYYY-MM-DD):");
+                    if (date) handleAddExam(examName, date);
+                  }}
+                  className="mt-4 text-sm text-blue-400 hover:text-blue-300"
+                >
+                  + Add Exam Date
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

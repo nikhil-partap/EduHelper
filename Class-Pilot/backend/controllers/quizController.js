@@ -1,10 +1,8 @@
 // File: /backend/controllers/quizController.js
 
-import mongoose from "mongoose";
 import Quiz from "../models/Quiz.js";
 import QuizAttempt from "../models/QuizAttempt.js";
 import Class from "../models/Class.js";
-import User from "../models/User.js";
 import { generateQuizQuestions } from "../utils/aiService.js";
 
 // Helper: ensure teacher owns the class
@@ -217,25 +215,36 @@ export const submitQuiz = async (req, res, next) => {
   }
 };
 
-// @desc Get all quizzes for a class (teacher only)
+// @desc Get all quizzes for a class (teacher or enrolled student)
 export const getClassQuizzes = async (req, res, next) => {
   try {
-    if (req.user.role !== "teacher") {
-      return res
-        .status(403)
-        .json({ message: "Only teachers can view class quizzes" });
-    }
-    const { classId } = req.query;
+    const { classId } = req.params;
     if (!classId)
       return res.status(400).json({ message: "classId is required" });
 
-    await assertTeacherOwnsClass(req.user._id, classId);
+    const classDoc = await Class.findById(classId);
+    if (!classDoc) return res.status(404).json({ message: "Class not found" });
+
+    // Check access: teacher owns class OR student is enrolled
+    const isTeacher =
+      req.user.role === "teacher" && classDoc.teacherId.equals(req.user._id);
+    const isStudent =
+      req.user.role === "student" &&
+      classDoc.students.some((s) => s.equals(req.user._id));
+
+    if (!isTeacher && !isStudent) {
+      return res.status(403).json({ message: "Access denied" });
+    }
 
     const quizzes = await Quiz.find({ classId }).sort({ createdAt: -1 });
-    res.status(200).json({ quizzes });
+
+    // For students, hide correct answers
+    const sanitizedQuizzes = isStudent
+      ? quizzes.map((q) => scrubQuizForStudent(q))
+      : quizzes;
+
+    res.status(200).json({ quizzes: sanitizedQuizzes });
   } catch (err) {
-    if (err.status)
-      return res.status(err.status).json({ message: err.message });
     next(err);
   }
 };
@@ -243,7 +252,7 @@ export const getClassQuizzes = async (req, res, next) => {
 // @desc Get a student's quiz attempts (student + teacher)
 export const getStudentQuizAttempts = async (req, res, next) => {
   try {
-    const { classId, studentId } = req.query;
+    const { classId, studentId } = req.params;
     if (!classId || !studentId) {
       return res
         .status(400)
@@ -289,7 +298,8 @@ export const getQuizStats = async (req, res, next) => {
         .json({ message: "Only teachers can view quiz stats" });
     }
 
-    const { quizId } = req.query;
+    // Support both query param and route param
+    const quizId = req.params.quizId || req.query.quizId;
     if (!quizId) return res.status(400).json({ message: "quizId is required" });
 
     const quiz = await Quiz.findById(quizId);

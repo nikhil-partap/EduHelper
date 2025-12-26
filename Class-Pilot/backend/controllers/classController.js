@@ -1,6 +1,5 @@
 // File: /backend/controllers/classController.js
 
-import { ReturnDocument } from "mongodb";
 import Class from "../models/Class.js";
 
 // @desc    Teacher creates a new class

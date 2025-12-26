@@ -32,6 +32,7 @@ import StudentAttendance from "./pages/StudentAttendance";
 import QuizGenerator from "./pages/QuizGenerator";
 import Quizzes from "./pages/Quizzes";
 import TakeQuiz from "./pages/TakeQuiz";
+import QuizStats from "./pages/QuizStats";
 import StudyPlanner from "./pages/StudyPlanner";
 import StudentReports from "./pages/StudentReports";
 
@@ -185,6 +186,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <QuizGenerator />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quiz/:quizId/stats"
+            element={
+              <ProtectedRoute>
+                <QuizStats />
               </ProtectedRoute>
             }
           />
