@@ -2,7 +2,7 @@ const FeatureCard = ({
   title,
   description,
   icon,
-  buttonText = "Coming Soon",
+  buttonText = "View",
   onClick,
   disabled = true,
   color = "blue",
