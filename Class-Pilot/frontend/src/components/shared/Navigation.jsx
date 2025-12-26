@@ -24,18 +24,21 @@ const Navigation = () => {
       ? [
           {name: "Dashboard", href: "/dashboard", icon: "🏠"},
           {name: "My Classes", href: "/classes", icon: "📚"},
-          {name: "Schedule", href: "/schedule", icon: "📅"},
+          {name: "Assignments", href: "/assignments", icon: "📋"},
+          {name: "Timetable", href: "/timetable", icon: "🗓️"},
           {name: "Attendance", href: "/attendance", icon: "📊"},
           {name: "Quizzes", href: "/quizzes", icon: "📝"},
-          {name: "Generate Quiz", href: "/quiz/generate", icon: "🤖"},
+          {name: "Meetings", href: "/meetings", icon: "📹"},
         ]
       : [
           {name: "Dashboard", href: "/dashboard", icon: "🏠"},
           {name: "My Classes", href: "/classes", icon: "📚"},
-          {name: "Schedule", href: "/schedule", icon: "📅"},
+          {name: "Assignments", href: "/assignments", icon: "📋"},
+          {name: "Timetable", href: "/timetable", icon: "🗓️"},
           {name: "My Attendance", href: "/my-attendance", icon: "📊"},
           {name: "Quizzes", href: "/quizzes", icon: "📝"},
           {name: "Grades", href: "/grades", icon: "🎯"},
+          {name: "Meetings", href: "/meetings", icon: "📹"},
         ];
 
   return (

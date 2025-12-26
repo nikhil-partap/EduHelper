@@ -3,6 +3,7 @@
 import mongoose from "mongoose";
 import StudyPlanner from "../models/StudyPlanner.js";
 import Class from "../models/Class.js";
+import { generateStudyPlanChapters } from "../utils/aiService.js";
 
 // --- Helpers ---
 
@@ -48,28 +49,6 @@ const academicYearWindow = (year) => {
   return { start, end };
 };
 
-// --- Placeholder AI generator (replace with actual API call) ---
-async function generateChaptersWithAI({ board, className }) {
-  // TODO: integrate OpenAI/Gemini using the provided prompt template.
-  // For now, mock a syllabus with durationDays between 1–3 per chapter.
-  const syllabus = [
-    "Numbers & Operations",
-    "Algebra Basics",
-    "Geometry Fundamentals",
-    "Mensuration",
-    "Data Handling",
-    "Trigonometry Intro",
-    "Coordinate Geometry",
-    "Probability Basics",
-  ];
-  return {
-    chapters: syllabus.map((title) => ({
-      chapterName: title,
-      durationDays: Math.floor(Math.random() * 3) + 1, // 1-3 days
-    })),
-  };
-}
-
 // --- Access control ---
 async function assertTeacherOwnsClass(teacherId, classId) {
   const classDoc = await Class.findById(classId);
@@ -103,26 +82,23 @@ export const generateStudyPlanner = async (req, res, next) => {
 
     await assertTeacherOwnsClass(req.user._id, classId);
 
-    // Build prompt (for real AI call)
-    const prompt = `
-Generate a study plan for ${board} ${className} with all chapters.
-Consider:
-- Weekends excluded
-- Academic year from January to December
-- Each chapter needs at least 1-3 days
+    // Generate chapters using AI service
+    let chapters;
+    try {
+      chapters = await generateStudyPlanChapters({
+        board,
+        className,
+        subject: req.body.subject || "Mathematics",
+      });
+    } catch (aiError) {
+      return res.status(502).json({
+        message: "Failed to generate study plan",
+        error: aiError.message,
+      });
+    }
 
-Return JSON:
-{
-  "chapters": [
-    { "chapterName": "...", "durationDays": 3 }
-  ]
-}
-`.trim();
-
-    // TODO: send 'prompt' to AI and parse JSON safely.
-    const aiResult = await generateChaptersWithAI({ board, className });
-    if (!aiResult?.chapters || aiResult.chapters.length === 0) {
-      return res.status(502).json({ message: "Failed to generate chapters" });
+    if (!chapters || chapters.length === 0) {
+      return res.status(502).json({ message: "AI returned no chapters" });
     }
 
     // Compute timeline
@@ -134,7 +110,7 @@ Return JSON:
     let cursor = normalizeUTC(start);
     const chaptersWithDates = [];
 
-    for (const ch of aiResult.chapters) {
+    for (const ch of chapters) {
       // Ensure buffer before each chapter
       for (let b = 0; b < bufferDays; ) {
         cursor.setUTCDate(cursor.getUTCDate() + 1);

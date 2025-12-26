@@ -21,6 +21,10 @@ import {
   ComingSoon,
   Grades,
   Schedule,
+  Assignments,
+  AssignmentDetail,
+  Timetable,
+  Meetings,
 } from "./pages";
 import ClassDetails from "./pages/ClassDetails";
 import Attendance from "./pages/Attendance";
@@ -139,11 +143,15 @@ const AppContent = () => {
             path="/assignments"
             element={
               <ProtectedRoute>
-                <ComingSoon
-                  title="Assignments"
-                  description="Create, manage and track assignments"
-                  icon="📝"
-                />
+                <Assignments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assignment/:assignmentId"
+            element={
+              <ProtectedRoute>
+                <AssignmentDetail />
               </ProtectedRoute>
             }
           />
@@ -228,6 +236,22 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <Schedule />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/timetable"
+            element={
+              <ProtectedRoute>
+                <Timetable />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/meetings"
+            element={
+              <ProtectedRoute>
+                <Meetings />
               </ProtectedRoute>
             }
           />

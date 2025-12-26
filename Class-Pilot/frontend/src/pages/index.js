@@ -10,3 +10,7 @@ export {default as TakeQuiz} from "./TakeQuiz";
 export {default as StudyPlanner} from "./StudyPlanner";
 export {default as Grades} from "./Grades";
 export {default as Schedule} from "./Schedule";
+export {default as Assignments} from "./Assignments";
+export {default as AssignmentDetail} from "./AssignmentDetail";
+export {default as Timetable} from "./Timetable";
+export {default as Meetings} from "./Meetings";

@@ -5,6 +5,7 @@ import Quiz from "../models/Quiz.js";
 import QuizAttempt from "../models/QuizAttempt.js";
 import Class from "../models/Class.js";
 import User from "../models/User.js";
+import { generateQuizQuestions } from "../utils/aiService.js";
 
 // Helper: ensure teacher owns the class
 async function assertTeacherOwnsClass(teacherId, classId) {
@@ -28,29 +29,6 @@ function scrubQuizForStudent(quiz) {
     difficultyLevel,
   }));
   return q;
-}
-
-// Placeholder AI generator (replace with actual API call)
-async function generateQuestionsWithAI({
-  numberOfQuestions,
-  topic,
-  chapter,
-  difficultyLevel,
-}) {
-  // TODO: Call AI API (OpenAI/Gemini) using the provided prompt template.
-  // For now, return a deterministic mock.
-  const questions = Array.from({ length: numberOfQuestions }, (_, i) => ({
-    question: `Q${i + 1}. ${topic} – ${chapter}: concept check`,
-    options: [
-      `Option A for Q${i + 1}`,
-      `Option B for Q${i + 1}`,
-      `Option C for Q${i + 1}`,
-      `Option D for Q${i + 1}`,
-    ],
-    correctAnswer: Math.floor(Math.random() * 4),
-    difficultyLevel: difficultyLevel || "medium",
-  }));
-  return { questions };
 }
 
 // @desc Generate a quiz via AI (teacher only)
@@ -78,40 +56,29 @@ export const generateQuiz = async (req, res, next) => {
 
     await assertTeacherOwnsClass(req.user._id, classId);
 
-    // Build prompt (for future AI integration)
-    const prompt = `
-Generate ${numberOfQuestions} multiple choice questions about ${topic} from ${chapter}.
-Difficulty: ${difficultyLevel}
-
-Return in this exact JSON format:
-{
-  "questions": [
-    {
-      "question": "...",
-      "options": ["option1", "option2", "option3", "option4"],
-      "correctAnswer": 0
+    // Generate questions using AI service
+    let questions;
+    try {
+      questions = await generateQuizQuestions({
+        topic,
+        chapter,
+        numberOfQuestions,
+        difficultyLevel,
+        provider: generatedBy === "manual" ? undefined : generatedBy,
+      });
+    } catch (aiError) {
+      return res.status(502).json({
+        message: "Failed to generate questions",
+        error: aiError.message,
+      });
     }
-  ]
-}
-`.trim();
 
-    // TODO: Replace with actual AI API call using 'prompt'
-    const aiResponse = await generateQuestionsWithAI({
-      numberOfQuestions,
-      topic,
-      chapter,
-      difficultyLevel,
-    });
-
-    // Validate AI response shape
-    if (
-      !aiResponse?.questions ||
-      !Array.isArray(aiResponse.questions) ||
-      aiResponse.questions.length === 0
-    ) {
-      return res.status(502).json({ message: "Failed to generate questions" });
+    // Validate AI response
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      return res.status(502).json({ message: "AI returned no questions" });
     }
-    const validQuestions = aiResponse.questions.every(
+
+    const validQuestions = questions.every(
       (q) =>
         q &&
         typeof q.question === "string" &&
@@ -130,9 +97,9 @@ Return in this exact JSON format:
       teacherId: req.user._id,
       topic,
       chapter,
-      numberOfQuestions: aiResponse.questions.length,
-      questions: aiResponse.questions,
-      generatedBy, // 'openai' | 'gemini' | 'manual'
+      numberOfQuestions: questions.length,
+      questions,
+      generatedBy: generatedBy || "gemini",
     });
 
     res.status(201).json({ quiz });
