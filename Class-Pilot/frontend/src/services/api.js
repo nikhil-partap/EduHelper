@@ -97,4 +97,84 @@ export const studyPlannerAPI = {
     api.put(`/api/studyplanner/${classId}/exam/${examName}`, {newDate}),
 };
 
+// Assignment API calls
+export const assignmentAPI = {
+  // Teacher endpoints
+  createAssignment: (data) => api.post("/api/assignment/create", data),
+  updateAssignment: (assignmentId, data) =>
+    api.put(`/api/assignment/${assignmentId}`, data),
+  deleteAssignment: (assignmentId) =>
+    api.delete(`/api/assignment/${assignmentId}`),
+  gradeSubmission: (assignmentId, studentId, data) =>
+    api.put(`/api/assignment/${assignmentId}/grade/${studentId}`, data),
+
+  // Student endpoints
+  submitAssignment: (assignmentId, data) =>
+    api.post(`/api/assignment/${assignmentId}/submit`, data),
+
+  // Shared endpoints
+  getClassAssignments: (classId) => api.get(`/api/assignment/class/${classId}`),
+  getAssignment: (assignmentId) => api.get(`/api/assignment/${assignmentId}`),
+};
+
+// Grade API calls
+export const gradeAPI = {
+  // Teacher endpoints
+  addGrade: (data) => api.post("/api/grade/add", data),
+  getClassGrades: (classId) => api.get(`/api/grade/class/${classId}`),
+  updateGrade: (gradeId, data) => api.put(`/api/grade/${gradeId}`, data),
+  deleteGrade: (gradeId) => api.delete(`/api/grade/${gradeId}`),
+
+  // Student endpoints
+  getGradeReport: () => api.get("/api/grade/report"),
+
+  // Shared endpoints
+  getStudentGrades: (classId, studentId) =>
+    api.get(`/api/grade/student/${classId}/${studentId}`),
+};
+
+// Timetable API calls
+export const timetableAPI = {
+  // CRUD
+  createTimetable: (data) => api.post("/api/timetable", data),
+  getTimetable: () => api.get("/api/timetable"),
+
+  // Slot management
+  addSlot: (data) => api.post("/api/timetable/slot", data),
+  updateSlot: (slotId, data) => api.put(`/api/timetable/slot/${slotId}`, data),
+  deleteSlot: (slotId) => api.delete(`/api/timetable/slot/${slotId}`),
+
+  // Schedule views
+  getDaySchedule: (day) => api.get(`/api/timetable/day/${day}`),
+
+  // Auto-populate (Student only)
+  autoPopulate: () => api.post("/api/timetable/auto-populate"),
+};
+
+// Meeting API calls
+export const meetingAPI = {
+  // Teacher endpoints
+  createMeeting: (data) => api.post("/api/meeting/create", data),
+  updateMeetingStatus: (meetingId, status) =>
+    api.put(`/api/meeting/${meetingId}/status`, {status}),
+  updateMeeting: (meetingId, data) =>
+    api.put(`/api/meeting/${meetingId}`, data),
+  deleteMeeting: (meetingId) => api.delete(`/api/meeting/${meetingId}`),
+
+  // Student endpoints
+  joinMeeting: (meetingId) => api.post(`/api/meeting/${meetingId}/join`),
+  leaveMeeting: (meetingId) => api.post(`/api/meeting/${meetingId}/leave`),
+
+  // Shared endpoints
+  getUpcomingMeetings: () => api.get("/api/meeting/upcoming"),
+  getClassMeetings: (classId, options = {}) => {
+    const params = new URLSearchParams();
+    if (options.status) params.append("status", options.status);
+    if (options.upcoming) params.append("upcoming", "true");
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return api.get(`/api/meeting/class/${classId}${query}`);
+  },
+  getMeeting: (meetingId) => api.get(`/api/meeting/${meetingId}`),
+};
+
 export default api;

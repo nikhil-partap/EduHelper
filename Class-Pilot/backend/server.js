@@ -9,6 +9,10 @@ import classRoutes from "./routes/class.js";
 import attendanceRoutes from "./routes/attendance.js";
 import quizRoutes from "./routes/quiz.js";
 import studyPlannerRoutes from "./routes/studyPlanner.js";
+import assignmentRoutes from "./routes/assignment.js";
+import gradeRoutes from "./routes/grade.js";
+import timetableRoutes from "./routes/timetable.js";
+import meetingRoutes from "./routes/meeting.js";
 
 // Load environment variables
 dotenv.config();
@@ -66,6 +70,10 @@ app.use("/api/class", classRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/api/studyplanner", studyPlannerRoutes);
+app.use("/api/assignment", assignmentRoutes);
+app.use("/api/grade", gradeRoutes);
+app.use("/api/timetable", timetableRoutes);
+app.use("/api/meeting", meetingRoutes);
 
 // --- Error Handling ---
 
