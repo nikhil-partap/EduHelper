@@ -6,7 +6,9 @@ import {
 } from "react-router-dom";
 import {AuthProvider} from "./context/AuthProvider";
 import {ClassProvider} from "./context/ClassProvider";
+import {ThemeProvider} from "./context/ThemeContext";
 import {useAuth} from "./hooks/useAuth";
+import {useTheme} from "./hooks/useTheme";
 import {Login, Register} from "./components/auth";
 import {
   Dashboard,
@@ -42,7 +44,7 @@ const ProtectedRoute = ({children}) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
@@ -57,8 +59,8 @@ const PublicRoute = ({children}) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" text="Initializing EduHelper..." />
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Initializing Class Pilot..." />
       </div>
     );
   }
@@ -89,8 +91,14 @@ const AttendancePage = () => {
 };
 
 const AppContent = () => {
+  const {theme} = useTheme();
+
   return (
-    <div className="min-h-screen bg-black flex flex-col">
+    <div
+      className={`min-h-screen flex flex-col transition-colors duration-300 ${
+        theme === "dark" ? "bg-black text-white" : "bg-gray-50 text-gray-900"
+      }`}
+    >
       <Navigation />
       <main className="flex-1">
         <Routes>
@@ -284,13 +292,15 @@ const AppContent = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <ClassProvider>
-          <AppContent />
-        </ClassProvider>
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <ClassProvider>
+            <AppContent />
+          </ClassProvider>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

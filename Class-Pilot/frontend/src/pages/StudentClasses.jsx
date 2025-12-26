@@ -1,12 +1,15 @@
 import {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
 import {useClass} from "../hooks/useClass";
+import {useTheme} from "../hooks/useTheme";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
 
 const StudentClasses = () => {
   const {classes, loading, error, fetchClasses, joinClass, clearError} =
     useClass();
+  const {theme} = useTheme();
+  const isDark = theme === "dark";
   const [success, setSuccess] = useState(null);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -17,7 +20,6 @@ const StudentClasses = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Join class with code
   const handleJoinClass = async (e) => {
     e.preventDefault();
     if (!classCode.trim()) return;
@@ -45,12 +47,30 @@ const StudentClasses = () => {
     );
   }
 
+  const cardClass = `rounded-lg shadow p-6 transition-colors ${
+    isDark
+      ? "bg-zinc-900 border border-zinc-800"
+      : "bg-white border border-gray-200"
+  }`;
+
+  const inputClass = `w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+    isDark
+      ? "bg-zinc-800 border-zinc-700 text-white"
+      : "bg-white border-gray-300 text-gray-900"
+  }`;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Classes</h1>
-          <p className="mt-2 text-gray-600">
+          <h1
+            className={`text-3xl font-bold ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            My Classes
+          </h1>
+          <p className={`mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
             View and manage your enrolled classes
           </p>
         </div>
@@ -63,7 +83,6 @@ const StudentClasses = () => {
       </div>
 
       {error && <Alert type="error" message={error} onClose={clearError} />}
-
       {success && (
         <Alert
           type="success"
@@ -72,10 +91,13 @@ const StudentClasses = () => {
         />
       )}
 
-      {/* Join Class Form */}
       {showJoinForm && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <div className={`${cardClass} mb-6`}>
+          <h3
+            className={`text-lg font-medium mb-4 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
             Join a Class
           </h3>
           <form onSubmit={handleJoinClass} className="flex gap-4">
@@ -85,10 +107,14 @@ const StudentClasses = () => {
                 value={classCode}
                 onChange={(e) => setClassCode(e.target.value.toUpperCase())}
                 placeholder="Enter class code (e.g., MATH-ABC123)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p
+                className={`text-xs mt-1 ${
+                  isDark ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
                 Ask your teacher for the class code
               </p>
             </div>
@@ -105,7 +131,11 @@ const StudentClasses = () => {
                 setShowJoinForm(false);
                 setClassCode("");
               }}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-md font-medium"
+              className={`px-6 py-2 rounded-md font-medium ${
+                isDark
+                  ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+              }`}
             >
               Cancel
             </button>
@@ -113,15 +143,18 @@ const StudentClasses = () => {
         </div>
       )}
 
-      {/* Classes List */}
       {classes.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className={cardClass}>
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📚</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3
+              className={`text-lg font-medium mb-2 ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
               No classes joined yet
             </h3>
-            <p className="text-gray-500 mb-6">
+            <p className={`mb-6 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
               Ask your teacher for a class code to join your first class
             </p>
           </div>
@@ -131,15 +164,31 @@ const StudentClasses = () => {
           {classes.map((classItem) => (
             <div
               key={classItem._id}
-              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
+              className={`${cardClass} hover:shadow-lg transition-shadow`}
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3
+                    className={`text-lg font-semibold ${
+                      isDark ? "text-white" : "text-gray-900"
+                    }`}
+                  >
                     {classItem.className}
                   </h3>
-                  <p className="text-sm text-gray-600">{classItem.subject}</p>
-                  <p className="text-xs text-gray-500">{classItem.board}</p>
+                  <p
+                    className={`text-sm ${
+                      isDark ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    {classItem.subject}
+                  </p>
+                  <p
+                    className={`text-xs ${
+                      isDark ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
+                    {classItem.board}
+                  </p>
                 </div>
                 <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
                   Enrolled
@@ -147,20 +196,40 @@ const StudentClasses = () => {
               </div>
 
               <div className="mb-4">
-                <p className="text-sm text-gray-600">Teacher:</p>
-                <p className="font-medium text-gray-900">
+                <p
+                  className={`text-sm ${
+                    isDark ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  Teacher:
+                </p>
+                <p
+                  className={`font-medium ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
                   {classItem.teacherId?.name || "Loading..."}
                 </p>
               </div>
 
               <div className="mb-4">
-                <p className="text-sm text-gray-600">Class Code:</p>
-                <p className="font-mono text-sm font-bold text-blue-600">
+                <p
+                  className={`text-sm ${
+                    isDark ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  Class Code:
+                </p>
+                <p className="font-mono text-sm font-bold text-blue-500">
                   {classItem.classCode}
                 </p>
               </div>
 
-              <div className="text-xs text-gray-500 mb-4">
+              <div
+                className={`text-xs mb-4 ${
+                  isDark ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
                 Joined: {new Date(classItem.updatedAt).toLocaleDateString()}
               </div>
 
@@ -171,9 +240,16 @@ const StudentClasses = () => {
                 >
                   View Details
                 </Link>
-                <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm font-medium">
+                <Link
+                  to="/assignments"
+                  className={`px-4 py-2 rounded text-sm font-medium ${
+                    isDark
+                      ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  }`}
+                >
                   Assignments
-                </button>
+                </Link>
               </div>
             </div>
           ))}

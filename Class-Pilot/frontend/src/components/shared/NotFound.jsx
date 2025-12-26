@@ -1,14 +1,31 @@
 import {useAuth} from "../../hooks/useAuth";
+import {useTheme} from "../../hooks/useTheme";
 
 const NotFound = () => {
   const {isAuthenticated} = useAuth();
+  const {theme} = useTheme();
+  const isDark = theme === "dark";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div
+      className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
+        isDark ? "bg-black" : "bg-gray-50"
+      }`}
+    >
       <div className="text-center">
         <div className="text-6xl mb-4">🤔</div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-8">
+        <h1
+          className={`text-4xl font-bold mb-4 ${
+            isDark ? "text-white" : "text-gray-900"
+          }`}
+        >
+          404
+        </h1>
+        <p
+          className={`text-xl mb-8 ${
+            isDark ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
           Oops! The page you're looking for doesn't exist.
         </p>
         <button

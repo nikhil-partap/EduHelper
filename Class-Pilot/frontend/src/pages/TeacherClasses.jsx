@@ -1,12 +1,15 @@
 import {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
 import {useClass} from "../hooks/useClass";
+import {useTheme} from "../hooks/useTheme";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
 
 const TeacherClasses = () => {
   const {classes, loading, error, fetchClasses, createClass, clearError} =
     useClass();
+  const {theme} = useTheme();
+  const isDark = theme === "dark";
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [success, setSuccess] = useState(null);
@@ -21,13 +24,11 @@ const TeacherClasses = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const {name, value} = e.target;
     setFormData((prev) => ({...prev, [name]: value}));
   };
 
-  // Create new class
   const handleCreateClass = async (e) => {
     e.preventDefault();
     try {
@@ -53,12 +54,32 @@ const TeacherClasses = () => {
     );
   }
 
+  const cardClass = `rounded-lg shadow p-6 transition-colors ${
+    isDark
+      ? "bg-zinc-900 border border-zinc-800"
+      : "bg-white border border-gray-200"
+  }`;
+
+  const inputClass = `w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+    isDark
+      ? "bg-zinc-800 border-zinc-700 text-white"
+      : "bg-white border-gray-300 text-gray-900"
+  }`;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white">My Classes</h1>
-          <p className="mt-2 text-gray-400">Manage your classes and students</p>
+          <h1
+            className={`text-3xl font-bold ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            My Classes
+          </h1>
+          <p className={`mt-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            Manage your classes and students
+          </p>
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
@@ -69,7 +90,6 @@ const TeacherClasses = () => {
       </div>
 
       {error && <Alert type="error" message={error} onClose={clearError} />}
-
       {success && (
         <Alert
           type="success"
@@ -78,16 +98,23 @@ const TeacherClasses = () => {
         />
       )}
 
-      {/* Create Class Form */}
       {showCreateForm && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-medium text-white mb-4">
+        <div className={`${cardClass} mb-6`}>
+          <h3
+            className={`text-lg font-medium mb-4 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
             Create New Class
           </h3>
           <form onSubmit={handleCreateClass} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-gray-200" : "text-gray-700"
+                  }`}
+                >
                   Class Name
                 </label>
                 <input
@@ -96,12 +123,16 @@ const TeacherClasses = () => {
                   value={formData.className}
                   onChange={handleInputChange}
                   placeholder="e.g., 10th A"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-gray-200" : "text-gray-700"
+                  }`}
+                >
                   Subject
                 </label>
                 <input
@@ -110,19 +141,23 @@ const TeacherClasses = () => {
                   value={formData.subject}
                   onChange={handleInputChange}
                   placeholder="e.g., Mathematics"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className={`block text-sm font-medium mb-1 ${
+                    isDark ? "text-gray-200" : "text-gray-700"
+                  }`}
+                >
                   Board
                 </label>
                 <select
                   name="board"
                   value={formData.board}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                   required
                 >
                   <option value="">Select Board</option>
@@ -144,7 +179,11 @@ const TeacherClasses = () => {
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-md font-medium"
+                className={`px-6 py-2 rounded-md font-medium ${
+                  isDark
+                    ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                    : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                }`}
               >
                 Cancel
               </button>
@@ -153,16 +192,19 @@ const TeacherClasses = () => {
         </div>
       )}
 
-      {/* Classes List */}
       {classes.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className={cardClass}>
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📚</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3
+              className={`text-lg font-medium mb-2 ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
               No classes yet
             </h3>
-            <p className="text-gray-500 mb-6">
-              Create your first class to get started with EduHelper
+            <p className={`mb-6 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+              Create your first class to get started with Class Pilot
             </p>
           </div>
         </div>
@@ -171,15 +213,31 @@ const TeacherClasses = () => {
           {classes.map((classItem) => (
             <div
               key={classItem._id}
-              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
+              className={`${cardClass} hover:shadow-lg transition-shadow`}
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3
+                    className={`text-lg font-semibold ${
+                      isDark ? "text-white" : "text-gray-900"
+                    }`}
+                  >
                     {classItem.className}
                   </h3>
-                  <p className="text-sm text-gray-600">{classItem.subject}</p>
-                  <p className="text-xs text-gray-500">{classItem.board}</p>
+                  <p
+                    className={`text-sm ${
+                      isDark ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    {classItem.subject}
+                  </p>
+                  <p
+                    className={`text-xs ${
+                      isDark ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
+                    {classItem.board}
+                  </p>
                 </div>
                 <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
                   {classItem.students?.length || 0} students
@@ -187,13 +245,23 @@ const TeacherClasses = () => {
               </div>
 
               <div className="mb-4">
-                <p className="text-sm text-gray-600">Class Code:</p>
-                <p className="font-mono text-lg font-bold text-blue-600">
+                <p
+                  className={`text-sm ${
+                    isDark ? "text-gray-400" : "text-gray-600"
+                  }`}
+                >
+                  Class Code:
+                </p>
+                <p className="font-mono text-lg font-bold text-blue-500">
                   {classItem.classCode}
                 </p>
               </div>
 
-              <div className="text-xs text-gray-500 mb-4">
+              <div
+                className={`text-xs mb-4 ${
+                  isDark ? "text-gray-500" : "text-gray-500"
+                }`}
+              >
                 Created: {new Date(classItem.createdAt).toLocaleDateString()}
               </div>
 
@@ -208,7 +276,11 @@ const TeacherClasses = () => {
                   onClick={() =>
                     navigator.clipboard.writeText(classItem.classCode)
                   }
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm font-medium"
+                  className={`px-4 py-2 rounded text-sm font-medium ${
+                    isDark
+                      ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  }`}
                 >
                   Share Code
                 </button>

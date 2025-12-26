@@ -1,6 +1,7 @@
 import {useState} from "react";
 import {Link} from "react-router-dom";
 import {useAuth} from "../../hooks/useAuth";
+import {useTheme} from "../../hooks/useTheme";
 import FormInput from "../shared/FormInput";
 import Alert from "../shared/Alert";
 import LoadingSpinner from "../shared/LoadingSpinner";
@@ -11,6 +12,8 @@ const Login = () => {
     password: "",
   });
   const {login, loading, error, clearError} = useAuth();
+  const {theme} = useTheme();
+  const isDark = theme === "dark";
 
   const handleChange = (e) => {
     const {name, value} = e.target;
@@ -20,23 +23,32 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await login(formData);
-    if (result.success) {
-      // Navigation will be handled by App component
-    }
+    await login(formData);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black py-12 px-4 sm:px-6 lg:px-8">
+    <div
+      className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
+        isDark ? "bg-black" : "bg-gray-50"
+      }`}
+    >
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
             <span className="text-white text-2xl font-bold">CP</span>
           </div>
-          <h2 className="text-3xl font-extrabold text-white">
-            Welcome to EduHelper
+          <h2
+            className={`text-3xl font-extrabold ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Welcome to Class Pilot
           </h2>
-          <p className="mt-2 text-sm text-gray-400">
+          <p
+            className={`mt-2 text-sm ${
+              isDark ? "text-gray-400" : "text-gray-600"
+            }`}
+          >
             Sign in to your classroom management system
           </p>
         </div>
@@ -85,22 +97,13 @@ const Login = () => {
             </button>
           </div>
 
-          <div className="text-center space-y-2">
+          <div className="text-center">
             <Link
               to="/register"
-              className="text-blue-600 hover:text-blue-500 text-sm block w-full"
+              className="text-blue-500 hover:text-blue-400 text-sm block w-full"
             >
               Don't have an account? Sign up
             </Link>
-            <button
-              type="button"
-              onClick={() =>
-                window.open("http://localhost:5000/health", "_blank")
-              }
-              className="text-gray-500 hover:text-gray-700 text-xs"
-            >
-              Test Backend Connection
-            </button>
           </div>
         </form>
       </div>

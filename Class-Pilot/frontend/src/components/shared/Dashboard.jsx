@@ -1,65 +1,107 @@
 import {useAuth} from "../../hooks/useAuth";
+import {useTheme} from "../../hooks/useTheme";
 import FeatureCard from "./FeatureCard";
 import {useNavigate} from "react-router-dom";
 
 const Dashboard = () => {
   const {user} = useAuth();
+  const {theme} = useTheme();
   const navigate = useNavigate();
+
+  const isDark = theme === "dark";
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div className="px-4 py-6 sm:px-0">
         {/* Welcome Section */}
-        <div className="bg-zinc-900 border border-zinc-800 overflow-hidden shadow rounded-lg mb-6">
+        <div
+          className={`overflow-hidden shadow rounded-lg mb-6 transition-colors duration-300 ${
+            isDark
+              ? "bg-zinc-900 border border-zinc-800"
+              : "bg-white border border-gray-200"
+          }`}
+        >
           <div className="px-4 py-5 sm:p-6">
-            <h2 className="text-2xl font-bold text-white mb-4">
+            <h2
+              className={`text-2xl font-bold mb-4 ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
               Welcome back, {user?.name}! 👋
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
-                <h3 className="font-semibold text-blue-400">Your Profile</h3>
-                <p className="text-gray-300 mt-2">
+              <div
+                className={`p-4 rounded-lg border transition-colors duration-300 ${
+                  isDark
+                    ? "bg-zinc-800 border-zinc-700"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
+                <h3 className="font-semibold text-blue-500">Your Profile</h3>
+                <p
+                  className={`mt-2 ${
+                    isDark ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
                   <strong>Name:</strong> {user?.name}
                 </p>
-                <p className="text-gray-300">
+                <p className={isDark ? "text-gray-300" : "text-gray-700"}>
                   <strong>Email:</strong> {user?.email}
                 </p>
-                <p className="text-gray-300">
+                <p className={isDark ? "text-gray-300" : "text-gray-700"}>
                   <strong>Role:</strong>{" "}
                   <span className="capitalize">{user?.role}</span>
                 </p>
                 {user?.role === "teacher" && user?.schoolName && (
-                  <p className="text-gray-300">
+                  <p className={isDark ? "text-gray-300" : "text-gray-700"}>
                     <strong>School:</strong> {user.schoolName}
                   </p>
                 )}
                 {user?.role === "student" && user?.rollNumber && (
-                  <p className="text-gray-300">
+                  <p className={isDark ? "text-gray-300" : "text-gray-700"}>
                     <strong>Roll Number:</strong> {user.rollNumber}
                   </p>
                 )}
               </div>
 
-              <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
-                <h3 className="font-semibold text-green-400">Quick Actions</h3>
+              <div
+                className={`p-4 rounded-lg border transition-colors duration-300 ${
+                  isDark
+                    ? "bg-zinc-800 border-zinc-700"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
+                <h3 className="font-semibold text-green-500">Quick Actions</h3>
                 <div className="mt-3 space-y-2">
                   {user?.role === "teacher" ? (
                     <>
                       <button
                         onClick={() => navigate("/classes")}
-                        className="w-full text-left px-3 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-gray-200 text-sm"
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                          isDark
+                            ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                        }`}
                       >
                         📚 Manage Classes
                       </button>
                       <button
                         onClick={() => navigate("/quiz/generate")}
-                        className="w-full text-left px-3 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-gray-200 text-sm"
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                          isDark
+                            ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                        }`}
                       >
                         🤖 Generate AI Quiz
                       </button>
                       <button
                         onClick={() => navigate("/attendance")}
-                        className="w-full text-left px-3 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-gray-200 text-sm"
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                          isDark
+                            ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                        }`}
                       >
                         ✅ Mark Attendance
                       </button>
@@ -68,19 +110,31 @@ const Dashboard = () => {
                     <>
                       <button
                         onClick={() => navigate("/classes")}
-                        className="w-full text-left px-3 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-gray-200 text-sm"
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                          isDark
+                            ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                        }`}
                       >
-                        � My Classes
+                        📚 My Classes
                       </button>
                       <button
                         onClick={() => navigate("/quizzes")}
-                        className="w-full text-left px-3 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-gray-200 text-sm"
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                          isDark
+                            ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                        }`}
                       >
                         📝 Take Quizzes
                       </button>
                       <button
                         onClick={() => navigate("/grades")}
-                        className="w-full text-left px-3 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-gray-200 text-sm"
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                          isDark
+                            ? "bg-zinc-700 hover:bg-zinc-600 text-gray-200"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                        }`}
                       >
                         📊 View Grades
                       </button>
@@ -94,7 +148,11 @@ const Dashboard = () => {
 
         {/* Feature Cards */}
         <div>
-          <h2 className="text-2xl font-bold text-white mb-6">
+          <h2
+            className={`text-2xl font-bold mb-6 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
             {user?.role === "teacher" ? "Teaching Tools" : "Learning Hub"}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
