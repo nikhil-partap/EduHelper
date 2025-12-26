@@ -1,75 +1,329 @@
 @import "tailwindcss";
 
-/* Dark Theme Base Styles */
+/* Theme CSS Variables */
 :root {
   --bg-primary: #000000;
   --bg-secondary: #18181b;
   --bg-tertiary: #27272a;
+  --bg-card: #18181b;
   --text-primary: #ffffff;
   --text-secondary: #a1a1aa;
-  --accent-blue: #3b82f6;
-  --accent-green: #10b981;
-  --accent-red: #ef4444;
+  --text-muted: #71717a;
+  --border-color: #27272a;
+  --border-hover: #3f3f46;
+  --input-bg: #27272a;
+  --input-border: #3f3f46;
+}
+
+/* Dark theme (default) */
+.dark {
+  --bg-primary: #000000;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --bg-card: #18181b;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-color: #27272a;
+  --border-hover: #3f3f46;
+  --input-bg: #27272a;
+  --input-border: #3f3f46;
+}
+
+/* Light theme */
+.light {
+  --bg-primary: #f9fafb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3f4f6;
+  --bg-card: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  --border-hover: #d1d5db;
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
 }
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Global dark theme overrides */
-input,
-select,
-textarea {
-  background-color: #27272a !important;
-  border-color: #3f3f46 !important;
-  color: white !important;
+/* ===== DARK THEME OVERRIDES ===== */
+
+/* Cards and containers */
+.dark .bg-white,
+.dark .bg-zinc-900 {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
 }
 
-input::placeholder {
-  color: #71717a !important;
+.dark .bg-gray-50,
+.dark .bg-zinc-800 {
+  background-color: var(--bg-tertiary) !important;
 }
 
-/* Custom scrollbar for dark theme */
-::-webkit-scrollbar {
+/* Text colors */
+.dark .text-gray-900,
+.dark .text-white {
+  color: var(--text-primary) !important;
+}
+
+.dark .text-gray-700,
+.dark .text-gray-600,
+.dark .text-gray-300 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: var(--text-muted) !important;
+}
+
+/* Borders */
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-zinc-700,
+.dark .border-zinc-800 {
+  border-color: var(--border-color) !important;
+}
+
+/* Inputs */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Hover states */
+.dark .hover\:bg-zinc-600:hover,
+.dark .hover\:bg-zinc-700:hover,
+.dark .hover\:bg-gray-100:hover {
+  background-color: #3f3f46 !important;
+}
+
+/* ===== LIGHT THEME OVERRIDES ===== */
+
+/* Cards and containers */
+.light .bg-zinc-900,
+.light .bg-zinc-800 {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+}
+
+.light .bg-zinc-700 {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Text colors */
+.light .text-white {
+  color: var(--text-primary) !important;
+}
+
+.light .text-gray-200,
+.light .text-gray-300 {
+  color: var(--text-secondary) !important;
+}
+
+.light .text-gray-400,
+.light .text-gray-500 {
+  color: var(--text-muted) !important;
+}
+
+/* Borders */
+.light .border-zinc-700,
+.light .border-zinc-800 {
+  border-color: var(--border-color) !important;
+}
+
+/* Inputs */
+.light input,
+.light select,
+.light textarea {
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--text-primary) !important;
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Hover states for light theme */
+.light .hover\:bg-zinc-600:hover,
+.light .hover\:bg-zinc-700:hover {
+  background-color: #e5e7eb !important;
+}
+
+.light .bg-zinc-700 {
+  background-color: #f3f4f6 !important;
+}
+
+/* ===== SCROLLBAR STYLES ===== */
+
+/* Dark theme scrollbar */
+.dark ::-webkit-scrollbar {
   width: 10px;
 }
 
-::-webkit-scrollbar-track {
+.dark ::-webkit-scrollbar-track {
   background: var(--bg-secondary);
 }
 
-::-webkit-scrollbar-thumb {
+.dark ::-webkit-scrollbar-thumb {
   background: var(--bg-tertiary);
   border-radius: 5px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.dark ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
 }
 
-/* Dark theme for all cards and containers */
-.bg-white {
-  background-color: #18181b !important;
-  border: 1px solid #27272a;
+/* Light theme scrollbar */
+.light ::-webkit-scrollbar {
+  width: 10px;
 }
 
-.bg-gray-50 {
-  background-color: #27272a !important;
+.light ::-webkit-scrollbar-track {
+  background: #f3f4f6;
 }
 
-.text-gray-900 {
-  color: white !important;
+.light ::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 5px;
 }
 
-.text-gray-700 {
-  color: #e4e4e7 !important;
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
-.text-gray-600 {
-  color: #a1a1aa !important;
+/* ===== TABLE STYLES ===== */
+
+.light table thead {
+  background-color: #f3f4f6 !important;
 }
 
-.text-gray-500 {
-  color: #71717a !important;
+.light table tbody tr:hover {
+  background-color: #f9fafb !important;
+}
+
+.light .bg-zinc-800 {
+  background-color: #f3f4f6 !important;
+}
+
+/* ===== BUTTON OVERRIDES ===== */
+
+/* Keep gradient buttons consistent */
+.bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
+/* Secondary buttons in light mode */
+.light .bg-zinc-700 {
+  background-color: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+.light .bg-zinc-700:hover {
+  background-color: #d1d5db !important;
+}
+
+/* ===== STATUS BADGES ===== */
+
+/* These should remain consistent across themes */
+.bg-green-100,
+.bg-red-100,
+.bg-yellow-100,
+.bg-blue-100 {
+  /* Keep original colors */
+}
+
+/* ===== MODAL/OVERLAY STYLES ===== */
+
+.light .bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ===== SPECIAL COMPONENT OVERRIDES ===== */
+
+/* Quiz option selected state */
+.light .bg-blue-900 {
+  background-color: #dbeafe !important;
+}
+
+.light .border-blue-700 {
+  border-color: #3b82f6 !important;
+}
+
+/* Grade backgrounds */
+.light .bg-green-900\/30 {
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+.light .bg-blue-900\/30 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.light .bg-yellow-900\/30 {
+  background-color: rgba(234, 179, 8, 0.1) !important;
+}
+
+.light .bg-red-900\/30 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Icon backgrounds in light mode */
+.light .bg-blue-500\/20 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+.light .bg-green-500\/20 {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+}
+
+.light .bg-purple-500\/20 {
+  background-color: rgba(168, 85, 247, 0.15) !important;
+}
+
+.light .bg-orange-500\/20 {
+  background-color: rgba(249, 115, 22, 0.15) !important;
+}
+
+/* Accent text colors - keep vibrant in both themes */
+.text-blue-400,
+.text-blue-500 {
+  color: #3b82f6 !important;
+}
+
+.text-green-400,
+.text-green-500 {
+  color: #22c55e !important;
+}
+
+.text-purple-400,
+.text-purple-500 {
+  color: #a855f7 !important;
+}
+
+.text-orange-400,
+.text-orange-500 {
+  color: #f97316 !important;
+}
+
+.text-red-400 {
+  color: #f87171 !important;
+}
+
+.text-yellow-400 {
+  color: #facc15 !important;
 }

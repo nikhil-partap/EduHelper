@@ -22,6 +22,11 @@ const Quizzes = () => {
   }, [classes.length]);
 
   const handleClassSelect = async (classId) => {
+    if (!classId) {
+      setSelectedClass(null);
+      setQuizzes([]);
+      return;
+    }
     const selected = classes.find((c) => c._id === classId);
     setSelectedClass(selected);
     await fetchQuizzes(classId);

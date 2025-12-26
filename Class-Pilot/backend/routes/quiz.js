@@ -27,15 +27,9 @@ const requireRole = (role) => (req, res, next) => {
 // Body: { classId, topic, chapter, numberOfQuestions, difficultyLevel }
 router.post("/generate", protect, requireRole("teacher"), generateQuiz);
 
-// GET /api/quiz/:quizId (protected)
-router.get("/:quizId", protect, getQuiz);
-
-// POST /api/quiz/:quizId/submit (protected, student only)
-// Body: { answers: number[] }
-router.post("/:quizId/submit", protect, requireRole("student"), submitQuiz);
-
-// GET /api/quiz/class/:classId (protected, teacher only)
-router.get("/class/:classId", protect, requireRole("teacher"), getClassQuizzes);
+// GET /api/quiz/class/:classId (protected, teacher or enrolled student)
+// MUST be before /:quizId to avoid route conflict
+router.get("/class/:classId", protect, getClassQuizzes);
 
 // GET /api/quiz/attempts/:classId/:studentId (protected)
 // Teacher sees any student; student sees only self (controller enforces)
@@ -43,5 +37,13 @@ router.get("/attempts/:classId/:studentId", protect, getStudentQuizAttempts);
 
 // GET /api/quiz/stats/:quizId (protected, teacher only)
 router.get("/stats/:quizId", protect, requireRole("teacher"), getQuizStats);
+
+// GET /api/quiz/:quizId (protected)
+// MUST be after specific routes to avoid conflicts
+router.get("/:quizId", protect, getQuiz);
+
+// POST /api/quiz/:quizId/submit (protected, student only)
+// Body: { answers: number[] }
+router.post("/:quizId/submit", protect, requireRole("student"), submitQuiz);
 
 export default router;

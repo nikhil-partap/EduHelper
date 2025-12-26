@@ -96,7 +96,7 @@ const TakeQuiz = () => {
             <div className="bg-zinc-800 rounded-lg p-4 text-center">
               <p className="text-gray-400 text-sm">Score</p>
               <p className="text-3xl font-bold text-white">
-                {result.score}/{result.totalQuestions}
+                {result.score}/{result.totalMarks}
               </p>
             </div>
             <div className="bg-zinc-800 rounded-lg p-4 text-center">
@@ -117,65 +117,21 @@ const TakeQuiz = () => {
             </div>
           </div>
 
-          <div className="space-y-4 mb-6">
-            {quiz.questions.map((q, index) => {
-              const userAnswer = result.answers[index];
-              const isCorrect = userAnswer === q.correctAnswer;
-
-              return (
-                <div
-                  key={index}
-                  className={`bg-zinc-800 rounded-lg p-4 border ${
-                    isCorrect ? "border-green-700" : "border-red-700"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="font-medium text-white">
-                      {index + 1}. {q.question}
-                    </p>
-                    {isCorrect ? (
-                      <span className="text-green-400 font-bold">✓</span>
-                    ) : (
-                      <span className="text-red-400 font-bold">✗</span>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    {q.options.map((option, optIndex) => {
-                      const isUserAnswer = optIndex === userAnswer;
-                      const isCorrectAnswer = optIndex === q.correctAnswer;
-
-                      return (
-                        <div
-                          key={optIndex}
-                          className={`p-2 rounded ${
-                            isCorrectAnswer
-                              ? "bg-green-900 border border-green-700"
-                              : isUserAnswer
-                              ? "bg-red-900 border border-red-700"
-                              : "bg-zinc-700"
-                          }`}
-                        >
-                          <span className="text-gray-200">
-                            {String.fromCharCode(65 + optIndex)}. {option}
-                            {isCorrectAnswer && (
-                              <span className="ml-2 text-green-400 font-medium">
-                                ✓ Correct Answer
-                              </span>
-                            )}
-                            {isUserAnswer && !isCorrectAnswer && (
-                              <span className="ml-2 text-red-400 font-medium">
-                                Your Answer
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="bg-zinc-800 rounded-lg p-6 mb-6 text-center">
+            <div className="text-6xl mb-4">
+              {result.percentage >= 90
+                ? "🏆"
+                : result.percentage >= 60
+                ? "🎉"
+                : "📚"}
+            </div>
+            <p className="text-gray-300 text-lg">
+              {result.percentage >= 90
+                ? "Excellent work! You aced this quiz!"
+                : result.percentage >= 60
+                ? "Good job! You passed the quiz."
+                : "Keep practicing! Review the material and try again."}
+            </p>
           </div>
 
           <button

@@ -1,6 +1,5 @@
 // File: /backend/controllers/gradeController.js
 
-import mongoose from "mongoose";
 import Grade from "../models/Grade.js";
 import Class from "../models/Class.js";
 
@@ -46,12 +45,10 @@ export const addGrade = async (req, res, next) => {
       score === undefined ||
       !totalMarks
     ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "classId, studentId, type, title, score, and totalMarks are required",
-        });
+      return res.status(400).json({
+        message:
+          "classId, studentId, type, title, score, and totalMarks are required",
+      });
     }
 
     const classDoc = await assertTeacherOwnsClass(req.user._id, classId);

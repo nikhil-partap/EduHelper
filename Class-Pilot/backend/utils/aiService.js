@@ -1,17 +1,13 @@
 // File: /backend/utils/aiService.js
 
-import { VertexAI } from "@google-cloud/vertexai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 
 // Initialize AI clients lazily
 let openaiClient = null;
-let vertexAIClient = null;
-let generativeModel = null;
+let geminiClient = null;
+let geminiModel = null;
 let clientsInitialized = false;
-
-// Vertex AI Configuration
-const VERTEX_PROJECT = process.env.VERTEX_PROJECT || "plasma-kit-461015-e4";
-const VERTEX_LOCATION = process.env.VERTEX_LOCATION || "us-central1";
 
 /**
  * Initialize AI clients (called lazily on first use)
@@ -29,25 +25,22 @@ function initializeClients() {
     });
   }
 
-  // Initialize Vertex AI
-  try {
-    vertexAIClient = new VertexAI({
-      project: VERTEX_PROJECT,
-      location: VERTEX_LOCATION,
-    });
-
-    // Create generative model with grounding
-    generativeModel = vertexAIClient.getGenerativeModel({
-      model: "gemini-1.5-pro",
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2048,
-      },
-    });
-
-    console.log("✅ Vertex AI initialized successfully");
-  } catch (error) {
-    console.error("❌ Failed to initialize Vertex AI:", error.message);
+  // Initialize Gemini with API key
+  if (
+    process.env.GEMINI_API_KEY &&
+    process.env.GEMINI_API_KEY !== "your_gemini_api_key_here"
+  ) {
+    try {
+      geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      geminiModel = geminiClient.getGenerativeModel({
+        model: "gemini-2.5-flash",
+      });
+      console.log("✅ Gemini AI initialized successfully");
+    } catch (error) {
+      console.error("❌ Failed to initialize Gemini AI:", error.message);
+    }
+  } else {
+    console.warn("⚠️ Gemini API key not configured");
   }
 
   clientsInitialized = true;
@@ -60,7 +53,7 @@ function initializeClients() {
  * @param {string} params.chapter - Chapter name
  * @param {number} params.numberOfQuestions - Number of questions to generate
  * @param {string} params.difficultyLevel - Difficulty level (easy/medium/hard)
- * @param {string} params.provider - AI provider to use ("vertexai" or "openai")
+ * @param {string} params.provider - AI provider to use ("gemini" or "openai")
  * @returns {Promise<Array>} Array of generated questions
  */
 export const generateQuizQuestions = async ({
@@ -68,30 +61,25 @@ export const generateQuizQuestions = async ({
   chapter,
   numberOfQuestions,
   difficultyLevel = "medium",
-  provider = process.env.AI_PROVIDER || "vertexai",
+  provider = process.env.AI_PROVIDER || "gemini",
 }) => {
   try {
     // Initialize clients on first use
     initializeClients();
 
     // Validate provider
-    if (!["openai", "vertexai", "gemini"].includes(provider)) {
+    if (!["openai", "gemini"].includes(provider)) {
       throw new Error(
-        `Invalid AI provider: ${provider}. Use "vertexai" or "openai"`
+        `Invalid AI provider: ${provider}. Use "gemini" or "openai"`
       );
     }
-
-    // Map gemini to vertexai for backward compatibility
-    if (provider === "gemini") provider = "vertexai";
 
     // Check if provider is configured
     if (provider === "openai" && !openaiClient) {
       throw new Error("OpenAI API key not configured");
     }
-    if (provider === "vertexai" && !generativeModel) {
-      throw new Error(
-        "Vertex AI not configured. Check your Google Cloud credentials."
-      );
+    if (provider === "gemini" && !geminiModel) {
+      throw new Error("Gemini API key not configured");
     }
 
     // Create the prompt
@@ -107,7 +95,7 @@ export const generateQuizQuestions = async ({
     if (provider === "openai") {
       questions = await generateWithOpenAI(prompt);
     } else {
-      questions = await generateWithVertexAI(prompt);
+      questions = await generateWithGemini(prompt);
     }
 
     // Validate and format questions
@@ -148,37 +136,24 @@ Important: Return ONLY the JSON array, no additional text or explanation.`;
 }
 
 /**
- * Generate questions using Vertex AI (Gemini)
+ * Generate questions using Gemini API
  */
-async function generateWithVertexAI(prompt) {
+async function generateWithGemini(prompt) {
   try {
-    const request = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }],
-        },
-      ],
-    };
-
-    const result = await generativeModel.generateContent(request);
-    const response = result.response;
-
-    // Extract text from response
-    const content = response.candidates[0].content.parts[0].text.trim();
+    const result = await geminiModel.generateContent(prompt);
+    const response = await result.response;
+    const content = response.text().trim();
 
     return parseAIResponse(content);
   } catch (error) {
-    console.error("Vertex AI Error:", error);
-    if (error.message.includes("credentials")) {
-      throw new Error(
-        "Invalid Google Cloud credentials. Set GOOGLE_APPLICATION_CREDENTIALS env var."
-      );
+    console.error("Gemini API Error:", error);
+    if (error.message.includes("API key")) {
+      throw new Error("Invalid Gemini API key");
     }
     if (error.message.includes("quota")) {
-      throw new Error("Vertex AI quota exceeded. Please try again later.");
+      throw new Error("Gemini API quota exceeded. Please try again later.");
     }
-    throw new Error(`Vertex AI error: ${error.message}`);
+    throw new Error(`Gemini API error: ${error.message}`);
   }
 }
 
@@ -298,37 +273,32 @@ function validateAndFormatQuestions(questions, expectedCount) {
  * @param {string} params.board - Education board (CBSE, ICSE, etc.)
  * @param {string} params.className - Class name (10th, 12th, etc.)
  * @param {string} params.subject - Subject (optional)
- * @param {string} params.provider - AI provider to use ("vertexai" or "openai")
+ * @param {string} params.provider - AI provider to use ("gemini" or "openai")
  * @returns {Promise<Array>} Array of generated chapters
  */
 export const generateStudyPlanChapters = async ({
   board,
   className,
   subject = "Mathematics",
-  provider = process.env.AI_PROVIDER || "vertexai",
+  provider = process.env.AI_PROVIDER || "gemini",
 }) => {
   try {
     // Initialize clients on first use
     initializeClients();
 
     // Validate provider
-    if (!["openai", "vertexai", "gemini"].includes(provider)) {
+    if (!["openai", "gemini"].includes(provider)) {
       throw new Error(
-        `Invalid AI provider: ${provider}. Use "vertexai" or "openai"`
+        `Invalid AI provider: ${provider}. Use "gemini" or "openai"`
       );
     }
-
-    // Map gemini to vertexai for backward compatibility
-    if (provider === "gemini") provider = "vertexai";
 
     // Check if provider is configured
     if (provider === "openai" && !openaiClient) {
       throw new Error("OpenAI API key not configured");
     }
-    if (provider === "vertexai" && !generativeModel) {
-      throw new Error(
-        "Vertex AI not configured. Check your Google Cloud credentials."
-      );
+    if (provider === "gemini" && !geminiModel) {
+      throw new Error("Gemini API key not configured");
     }
 
     // Create the prompt
@@ -339,7 +309,7 @@ export const generateStudyPlanChapters = async ({
     if (provider === "openai") {
       chapters = await generateStudyPlanWithOpenAI(prompt);
     } else {
-      chapters = await generateStudyPlanWithVertexAI(prompt);
+      chapters = await generateStudyPlanWithGemini(prompt);
     }
 
     // Validate and format chapters
@@ -374,33 +344,24 @@ Important: Return ONLY the JSON array, no additional text or explanation.`;
 }
 
 /**
- * Generate study plan using Vertex AI
+ * Generate study plan using Gemini API
  */
-async function generateStudyPlanWithVertexAI(prompt) {
+async function generateStudyPlanWithGemini(prompt) {
   try {
-    const request = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }],
-        },
-      ],
-    };
-
-    const result = await generativeModel.generateContent(request);
-    const response = result.response;
-    const content = response.candidates[0].content.parts[0].text.trim();
+    const result = await geminiModel.generateContent(prompt);
+    const response = await result.response;
+    const content = response.text().trim();
 
     return parseStudyPlanResponse(content);
   } catch (error) {
-    console.error("Vertex AI Study Plan Error:", error);
-    if (error.message.includes("credentials")) {
-      throw new Error("Invalid Google Cloud credentials");
+    console.error("Gemini Study Plan Error:", error);
+    if (error.message.includes("API key")) {
+      throw new Error("Invalid Gemini API key");
     }
     if (error.message.includes("quota")) {
-      throw new Error("Vertex AI quota exceeded. Please try again later.");
+      throw new Error("Gemini API quota exceeded. Please try again later.");
     }
-    throw new Error(`Vertex AI error: ${error.message}`);
+    throw new Error(`Gemini API error: ${error.message}`);
   }
 }
 
@@ -500,7 +461,7 @@ function validateAndFormatChapters(chapters) {
 /**
  * Test AI connection
  */
-export const testAIConnection = async (provider = "vertexai") => {
+export const testAIConnection = async (provider = "gemini") => {
   try {
     // Initialize clients on first use
     initializeClients();

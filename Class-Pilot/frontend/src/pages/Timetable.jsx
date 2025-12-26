@@ -35,6 +35,7 @@ const Timetable = () => {
 
   useEffect(() => {
     fetchTimetable();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchTimetable = async () => {
