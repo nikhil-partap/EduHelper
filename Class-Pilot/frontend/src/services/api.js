@@ -88,6 +88,8 @@ export const studyPlannerAPI = {
   getPlanner: (classId) => api.get(`/api/studyplanner/${classId}`),
 
   // Teacher-only chapter/holiday/exam management
+  addChapter: (classId, data) =>
+    api.post(`/api/studyplanner/${classId}/chapter`, data),
   updateChapter: (classId, chapterIndex, data) =>
     api.put(`/api/studyplanner/${classId}/chapter/${chapterIndex}`, data),
   deleteChapter: (classId, chapterIndex) =>

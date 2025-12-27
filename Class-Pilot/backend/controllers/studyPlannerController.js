@@ -454,6 +454,74 @@ export const reorderChapters = async (req, res, next) => {
   }
 };
 
+// Add a new chapter (teacher only)
+export const addChapter = async (req, res, next) => {
+  try {
+    if (req.user.role !== "teacher") {
+      return res
+        .status(403)
+        .json({ message: "Only teachers can add chapters" });
+    }
+
+    const { classId } = req.params;
+    const { chapterName, durationDays } = req.body;
+
+    if (!chapterName) {
+      return res.status(400).json({ message: "Chapter name is required" });
+    }
+
+    await assertTeacherOwnsClass(req.user._id, classId);
+
+    const planner = await StudyPlanner.findOne({ classId });
+    if (!planner) {
+      return res.status(404).json({ message: "Study planner not found" });
+    }
+
+    const holidaySet = new Set(
+      (planner.holidays || []).map((d) => normalizeUTC(d).getTime())
+    );
+
+    // Calculate start date based on last chapter's end date
+    let cursor;
+    if (planner.chapters.length > 0) {
+      const lastChapter = planner.chapters[planner.chapters.length - 1];
+      cursor = new Date(lastChapter.endDate);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+      // Add buffer day
+      cursor = nextWorkingDay(cursor, holidaySet);
+    } else {
+      const year = planner.academicYear || new Date().getUTCFullYear();
+      const { start } = academicYearWindow(year);
+      cursor = normalizeUTC(start);
+    }
+
+    const duration = Math.max(1, Number(durationDays) || 5);
+    const { start: chStart, end: chEnd } = spanWorkingDays(
+      cursor,
+      duration,
+      holidaySet
+    );
+
+    // Add the new chapter
+    planner.chapters.push({
+      chapterName,
+      startDate: chStart,
+      endDate: chEnd,
+      durationDays: duration,
+    });
+
+    planner.lastEditedAt = new Date();
+    await planner.save();
+
+    res.status(201).json({ planner });
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
+};
+
 // Delete a chapter (teacher only)
 export const deleteChapter = async (req, res, next) => {
   try {

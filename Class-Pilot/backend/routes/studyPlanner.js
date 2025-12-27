@@ -6,6 +6,7 @@ import {
   getStudyPlanner,
   updateChapter,
   reorderChapters,
+  addChapter,
   deleteChapter,
   updateAcademicYear,
   deleteStudyPlanner,
@@ -54,6 +55,10 @@ router.put(
   requireRole("teacher"),
   updateChapter
 );
+
+// POST /api/studyplanner/:classId/chapter (teacher only) - Add new chapter
+// Body: { chapterName, durationDays }
+router.post("/:classId/chapter", protect, requireRole("teacher"), addChapter);
 
 // DELETE /api/studyplanner/:classId/chapter/:chapterIndex (teacher only)
 router.delete(

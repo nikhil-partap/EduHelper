@@ -76,10 +76,10 @@ const SortableChapterItem = ({
                 isDark ? "text-foreground" : "text-gray-900"
               }`}
             >
-              Week {index + 1}
+              {index + 1}. {chapter.chapterName}
             </h3>
             <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
-              {chapter.chapterName}
+              {/* Week {index + 1} */}
             </p>
           </div>
         </div>
@@ -359,6 +359,11 @@ const StudyPlanner = () => {
   const [showTimeline, setShowTimeline] = useState(false);
   const [editingChapter, setEditingChapter] = useState(null);
   const [editingYear, setEditingYear] = useState(false);
+  const [showAddChapter, setShowAddChapter] = useState(false);
+  const [newChapter, setNewChapter] = useState({
+    chapterName: "",
+    durationDays: 5,
+  });
   const currentYear = new Date().getFullYear();
   const [generateForm, setGenerateForm] = useState({
     board: "CBSE",
@@ -508,6 +513,27 @@ const StudyPlanner = () => {
       setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete chapter");
+    }
+  };
+
+  const handleAddChapter = async (e) => {
+    e.preventDefault();
+    if (!newChapter.chapterName.trim()) {
+      setError("Chapter name is required");
+      return;
+    }
+    try {
+      const response = await studyPlannerAPI.addChapter(selectedClassId, {
+        chapterName: newChapter.chapterName,
+        durationDays: newChapter.durationDays,
+      });
+      setPlanner(response.data.planner);
+      setShowAddChapter(false);
+      setNewChapter({chapterName: "", durationDays: 5});
+      setSuccess("Chapter added!");
+      setTimeout(() => setSuccess(null), 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to add chapter");
     }
   };
 
@@ -766,7 +792,7 @@ const StudyPlanner = () => {
               Generate Study Planner
             </h2>
             <form onSubmit={handleGeneratePlanner} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${
@@ -847,6 +873,37 @@ const StudyPlanner = () => {
                         : "bg-white border-gray-300 text-gray-900"
                     }`}
                   />
+                </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      isDark ? "text-foreground" : "text-gray-700"
+                    }`}
+                  >
+                    Academic Year
+                  </label>
+                  <select
+                    value={generateForm.academicYear}
+                    onChange={(e) =>
+                      setGenerateForm({
+                        ...generateForm,
+                        academicYear: parseInt(e.target.value),
+                      })
+                    }
+                    className={`w-full px-3 py-2 rounded-md border ${
+                      isDark
+                        ? "bg-input-background border-border text-foreground"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
+                  >
+                    {[currentYear, currentYear + 1, currentYear + 2].map(
+                      (y) => (
+                        <option key={y} value={y}>
+                          {y}-{y + 1}
+                        </option>
+                      )
+                    )}
+                  </select>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -941,42 +998,112 @@ const StudyPlanner = () => {
                 isDark ? "bg-card border-border" : "bg-white border-gray-200"
               }`}
             >
-              <div className="flex flex-wrap gap-3">
-                <span
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    isDark
-                      ? "bg-blue-950 text-blue-300"
-                      : "bg-blue-100 text-blue-800"
-                  }`}
-                >
-                  {planner.board}
-                </span>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    isDark
-                      ? "bg-purple-950 text-purple-300"
-                      : "bg-purple-100 text-purple-800"
-                  }`}
-                >
-                  Class {planner.className}
-                </span>
-                <span
-                  className={`text-sm ${
-                    isDark ? "text-muted-foreground" : "text-gray-500"
-                  }`}
-                >
-                  Generated: {formatDate(planner.generatedAt)}
-                </span>
-                {isTeacher && (
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-3">
                   <span
                     className={`px-3 py-1 rounded-full text-sm ${
                       isDark
-                        ? "bg-green-950 text-green-300"
-                        : "bg-green-100 text-green-800"
+                        ? "bg-blue-950 text-blue-300"
+                        : "bg-blue-100 text-blue-800"
                     }`}
                   >
-                    ⋮⋮ Drag | ✏️ Edit | 🗑️ Delete
+                    {planner.board}
                   </span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      isDark
+                        ? "bg-purple-950 text-purple-300"
+                        : "bg-purple-100 text-purple-800"
+                    }`}
+                  >
+                    Class {planner.className}
+                  </span>
+                  {/* Academic Year - Editable for teachers */}
+                  {editingYear && isTeacher ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        defaultValue={planner.academicYear || currentYear}
+                        onChange={(e) =>
+                          handleUpdateYear(parseInt(e.target.value))
+                        }
+                        className={`px-2 py-1 rounded-md border text-sm ${
+                          isDark
+                            ? "bg-input-background border-border text-foreground"
+                            : "bg-white border-gray-300 text-gray-900"
+                        }`}
+                      >
+                        {[currentYear, currentYear + 1, currentYear + 2].map(
+                          (y) => (
+                            <option key={y} value={y}>
+                              {y}-{y + 1}
+                            </option>
+                          )
+                        )}
+                      </select>
+                      <button
+                        onClick={() => setEditingYear(false)}
+                        className={`px-2 py-1 text-xs rounded ${
+                          isDark
+                            ? "text-gray-400 hover:text-gray-300"
+                            : "text-gray-500 hover:text-gray-700"
+                        }`}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${
+                        isDark
+                          ? "bg-orange-950 text-orange-300"
+                          : "bg-orange-100 text-orange-800"
+                      }`}
+                    >
+                      📆 {planner.academicYear || currentYear}-
+                      {(planner.academicYear || currentYear) + 1}
+                      {isTeacher && (
+                        <button
+                          onClick={() => setEditingYear(true)}
+                          className="ml-1 hover:opacity-70"
+                          title="Edit academic year"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                    </span>
+                  )}
+                  <span
+                    className={`text-sm ${
+                      isDark ? "text-muted-foreground" : "text-gray-500"
+                    }`}
+                  >
+                    Generated: {formatDate(planner.generatedAt)}
+                  </span>
+                  {isTeacher && (
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        isDark
+                          ? "bg-green-950 text-green-300"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
+                      ⋮⋮ Drag | ✏️ Edit | 🗑️ Delete
+                    </span>
+                  )}
+                </div>
+                {/* Delete Planner Button - Teachers only */}
+                {isTeacher && (
+                  <button
+                    onClick={handleDeletePlanner}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isDark
+                        ? "bg-red-950 text-red-300 hover:bg-red-900"
+                        : "bg-red-100 text-red-700 hover:bg-red-200"
+                    }`}
+                    title="Delete entire study planner"
+                  >
+                    🗑️ Delete Planner
+                  </button>
                 )}
               </div>
             </div>
@@ -1022,6 +1149,116 @@ const StudyPlanner = () => {
                 </div>
               </SortableContext>
             </DndContext>
+
+            {/* Add Chapter Section - Teachers only */}
+            {isTeacher && (
+              <div
+                className={`rounded-xl border p-6 ${
+                  isDark ? "bg-card border-border" : "bg-white border-gray-200"
+                }`}
+              >
+                {showAddChapter ? (
+                  <form onSubmit={handleAddChapter} className="space-y-4">
+                    <h3
+                      className={`text-lg font-semibold ${
+                        isDark ? "text-foreground" : "text-gray-900"
+                      }`}
+                    >
+                      ➕ Add New Chapter
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-2 ${
+                            isDark ? "text-foreground" : "text-gray-700"
+                          }`}
+                        >
+                          Chapter Name
+                        </label>
+                        <input
+                          type="text"
+                          value={newChapter.chapterName}
+                          onChange={(e) =>
+                            setNewChapter({
+                              ...newChapter,
+                              chapterName: e.target.value,
+                            })
+                          }
+                          placeholder="e.g., Quadratic Equations"
+                          className={`w-full px-3 py-2 rounded-md border ${
+                            isDark
+                              ? "bg-input-background border-border text-foreground"
+                              : "bg-white border-gray-300 text-gray-900"
+                          }`}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-2 ${
+                            isDark ? "text-foreground" : "text-gray-700"
+                          }`}
+                        >
+                          Duration (days)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={newChapter.durationDays}
+                          onChange={(e) =>
+                            setNewChapter({
+                              ...newChapter,
+                              durationDays: parseInt(e.target.value) || 1,
+                            })
+                          }
+                          className={`w-full px-3 py-2 rounded-md border ${
+                            isDark
+                              ? "bg-input-background border-border text-foreground"
+                              : "bg-white border-gray-300 text-gray-900"
+                          }`}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-colors"
+                      >
+                        Add Chapter
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddChapter(false);
+                          setNewChapter({chapterName: "", durationDays: 5});
+                        }}
+                        className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                          isDark
+                            ? "bg-secondary text-secondary-foreground hover:bg-accent"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => setShowAddChapter(true)}
+                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-dashed transition-colors ${
+                      isDark
+                        ? "border-zinc-700 text-gray-400 hover:border-blue-500 hover:text-blue-400"
+                        : "border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-600"
+                    }`}
+                  >
+                    <span className="text-xl">➕</span>
+                    <span className="font-medium">Add New Chapter</span>
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Holidays & Exams */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
