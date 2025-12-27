@@ -1,5 +1,5 @@
-import {useState} from "react";
-import {Link, useLocation} from "react-router-dom";
+import {useState, useRef, useEffect} from "react";
+import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useAuth} from "../../hooks/useAuth";
 import {useTheme} from "../../hooks/useTheme";
 
@@ -7,7 +7,24 @@ const Navigation = () => {
   const {user, logout, isAuthenticated} = useAuth();
   const {theme, toggleTheme} = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const profileRef = useRef(null);
+
+  const isDark = theme === "dark";
+  const isTeacher = user?.role === "teacher";
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Don't show navigation on login/register pages
   if (
@@ -19,138 +36,232 @@ const Navigation = () => {
 
   const handleLogout = () => {
     logout();
+    navigate("/login");
   };
 
-  const menuItems =
-    user?.role === "teacher"
-      ? [
-          {name: "Dashboard", href: "/dashboard", icon: "🏠"},
-          {name: "My Classes", href: "/classes", icon: "📚"},
-          {name: "Assignments", href: "/assignments", icon: "📋"},
-          {name: "Timetable", href: "/timetable", icon: "🗓️"},
-          {name: "Attendance", href: "/attendance", icon: "📊"},
-          {name: "Quizzes", href: "/quizzes", icon: "📝"},
-          {name: "Meetings", href: "/meetings", icon: "📹"},
-        ]
-      : [
-          {name: "Dashboard", href: "/dashboard", icon: "🏠"},
-          {name: "My Classes", href: "/classes", icon: "📚"},
-          {name: "Assignments", href: "/assignments", icon: "📋"},
-          {name: "Timetable", href: "/timetable", icon: "🗓️"},
-          {name: "My Attendance", href: "/my-attendance", icon: "📊"},
-          {name: "Quizzes", href: "/quizzes", icon: "📝"},
-          {name: "Grades", href: "/grades", icon: "🎯"},
-          {name: "Meetings", href: "/meetings", icon: "📹"},
-        ];
+  // Navigation items based on role
+  const teacherMenuItems = [
+    {id: "dashboard", label: "Dashboard", href: "/dashboard"},
+    {id: "classes", label: "My Classes", href: "/classes"},
+    {id: "attendance", label: "Attendance", href: "/attendance"},
+    {id: "quizzes", label: "Quizzes", href: "/quizzes"},
+    {id: "assignments", label: "Assignments", href: "/assignments"},
+    {id: "grades", label: "Grades", href: "/grades"},
+    {id: "study-planner", label: "Study Planner", href: "/study-planner"},
+    {id: "meetings", label: "Meetings", href: "/meetings"},
+    {id: "timetable", label: "Timetable", href: "/timetable"},
+    {id: "reports", label: "Reports", href: "/reports"},
+  ];
+
+  const studentMenuItems = [
+    {id: "dashboard", label: "Dashboard", href: "/dashboard"},
+    {id: "classes", label: "My Classes", href: "/classes"},
+    {id: "take-quiz", label: "Take Quiz", href: "/quizzes"},
+    {id: "assignments", label: "Assignments", href: "/assignments"},
+    {id: "portfolio", label: "Portfolio", href: "/portfolio"},
+    {id: "grades", label: "My Grades", href: "/grades"},
+    {id: "attendance", label: "My Attendance", href: "/my-attendance"},
+    {id: "study-planner", label: "Study Planner", href: "/study-planner"},
+    {id: "meetings", label: "Meetings", href: "/meetings"},
+    {id: "timetable", label: "Timetable", href: "/timetable"},
+  ];
+
+  const menuItems = isTeacher ? teacherMenuItems : studentMenuItems;
+
+  const isActiveRoute = (href) => location.pathname === href;
+
+  const getInitials = (name) => {
+    return (
+      name
+        ?.split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase() || "U"
+    );
+  };
 
   return (
-    <nav className="bg-zinc-900 dark:bg-zinc-900 light:bg-white border-b border-zinc-800 dark:border-zinc-800 light:border-gray-200 shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo and brand */}
-          <div className="flex items-center">
-            <Link to="/dashboard" className="flex-shrink-0 flex items-center">
-              <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">CP</span>
-              </div>
-              <span className="ml-2 text-xl font-bold text-white dark:text-white light:text-gray-900">
-                Class Pilot
-              </span>
-            </Link>
-          </div>
-
-          {/* Desktop menu */}
-          <div className="hidden md:flex items-center space-x-6">
-            {menuItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 transition-colors duration-200 ${
-                  location.pathname === item.href
-                    ? "text-blue-400 bg-zinc-800 dark:bg-zinc-800 light:bg-blue-50"
-                    : "text-gray-300 dark:text-gray-300 light:text-gray-600 hover:text-blue-400"
+    <nav
+      className={`sticky top-0 z-50 border-b ${
+        isDark ? "bg-card border-border" : "bg-white border-gray-200"
+      }`}
+    >
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-lg">🎓</span>
+            </div>
+            <div>
+              <h1
+                className={`font-semibold ${
+                  isDark ? "text-foreground" : "text-gray-900"
                 }`}
               >
-                <span>{item.icon}</span>
-                <span>{item.name}</span>
+                Class Pilot
+              </h1>
+              <p
+                className={`text-xs capitalize ${
+                  isDark ? "text-muted-foreground" : "text-gray-500"
+                }`}
+              >
+                {user?.role}
+              </p>
+            </div>
+          </Link>
+
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center gap-1">
+            {menuItems.map((item) => (
+              <Link
+                key={item.id}
+                to={item.href}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActiveRoute(item.href)
+                    ? isDark
+                      ? "bg-secondary text-secondary-foreground"
+                      : "bg-gray-100 text-gray-900"
+                    : isDark
+                    ? "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                {item.label}
               </Link>
             ))}
           </div>
 
-          {/* User menu */}
-          <div className="flex items-center space-x-3">
-            {/* Theme Toggle Button */}
+          {/* Right Side */}
+          <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg bg-zinc-800 dark:bg-zinc-800 light:bg-gray-100 hover:bg-zinc-700 dark:hover:bg-zinc-700 light:hover:bg-gray-200 transition-colors duration-200"
-              title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              className={`hidden sm:flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                isDark
+                  ? "bg-background border-input hover:bg-accent"
+                  : "bg-white border-gray-200 hover:bg-gray-50"
+              }`}
+              title={`Switch to ${isDark ? "light" : "dark"} mode`}
             >
-              {theme === "dark" ? (
-                <span className="text-yellow-400 text-lg">☀️</span>
+              {isDark ? (
+                <span className="text-yellow-400">☀️</span>
               ) : (
-                <span className="text-gray-600 text-lg">🌙</span>
+                <span>🌙</span>
               )}
             </button>
 
-            <div className="hidden md:flex items-center space-x-3">
-              <div className="text-sm text-gray-200 dark:text-gray-200 light:text-gray-700">
-                <span className="font-medium">{user?.name}</span>
-                <div className="text-xs text-gray-400 dark:text-gray-400 light:text-gray-500 capitalize">
-                  {user?.role}
+            {/* Profile Dropdown */}
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="relative h-10 w-10 rounded-full overflow-hidden"
+              >
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
+                  {getInitials(user?.name)}
                 </div>
-              </div>
-              <div className="h-8 w-8 bg-zinc-700 dark:bg-zinc-700 light:bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-gray-200 dark:text-gray-200 light:text-gray-700 text-sm font-medium">
-                  {user?.name?.charAt(0).toUpperCase()}
-                </span>
-              </div>
+              </button>
+
+              {isProfileOpen && (
+                <div
+                  className={`absolute right-0 mt-2 w-56 rounded-md border shadow-lg py-1 ${
+                    isDark
+                      ? "bg-popover border-border"
+                      : "bg-white border-gray-200"
+                  }`}
+                >
+                  <div
+                    className={`px-4 py-3 border-b ${
+                      isDark ? "border-border" : "border-gray-100"
+                    }`}
+                  >
+                    <p
+                      className={`font-medium ${
+                        isDark ? "text-foreground" : "text-gray-900"
+                      }`}
+                    >
+                      {user?.name}
+                    </p>
+                    <p
+                      className={`text-xs capitalize ${
+                        isDark ? "text-muted-foreground" : "text-gray-500"
+                      }`}
+                    >
+                      {user?.role}
+                    </p>
+                  </div>
+                  <button
+                    onClick={toggleTheme}
+                    className={`sm:hidden w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                      isDark
+                        ? "text-foreground hover:bg-accent"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {isDark ? "☀️" : "🌙"}
+                    <span>Toggle Theme</span>
+                  </button>
+                  <div
+                    className={`border-t ${
+                      isDark ? "border-border" : "border-gray-100"
+                    }`}
+                  >
+                    <button
+                      onClick={handleLogout}
+                      className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                        isDark
+                          ? "text-foreground hover:bg-accent"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      🚪
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              Logout
-            </button>
-
-            {/* Mobile menu button */}
+            {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-zinc-800"
+              className={`md:hidden flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                isDark
+                  ? "bg-background border-input hover:bg-accent"
+                  : "bg-white border-gray-200 hover:bg-gray-50"
+              }`}
             >
-              <span className="sr-only">Open main menu</span>
               {isMenuOpen ? "✕" : "☰"}
             </button>
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-zinc-800 dark:border-zinc-800 light:border-gray-200">
+          <div
+            className={`md:hidden pb-3 flex gap-2 overflow-x-auto ${
+              isDark ? "border-t border-border" : "border-t border-gray-100"
+            }`}
+          >
+            <div className="flex gap-2 py-3">
               {menuItems.map((item) => (
                 <Link
-                  key={item.name}
+                  key={item.id}
                   to={item.href}
-                  className={`px-3 py-2 rounded-md text-base font-medium flex items-center space-x-2 ${
-                    location.pathname === item.href
-                      ? "text-blue-400 bg-zinc-800"
-                      : "text-gray-300 dark:text-gray-300 light:text-gray-600 hover:text-blue-400"
-                  }`}
                   onClick={() => setIsMenuOpen(false)}
+                  className={`whitespace-nowrap px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActiveRoute(item.href)
+                      ? isDark
+                        ? "bg-secondary text-secondary-foreground"
+                        : "bg-gray-100 text-gray-900"
+                      : isDark
+                      ? "text-muted-foreground hover:bg-accent"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
                 >
-                  <span>{item.icon}</span>
-                  <span>{item.name}</span>
+                  {item.label}
                 </Link>
               ))}
-              <div className="border-t border-zinc-800 dark:border-zinc-800 light:border-gray-200 pt-3 mt-3">
-                <div className="px-3 py-2 text-sm text-gray-200 dark:text-gray-200 light:text-gray-700">
-                  <div className="font-medium">{user?.name}</div>
-                  <div className="text-xs text-gray-400 capitalize">
-                    {user?.role}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}

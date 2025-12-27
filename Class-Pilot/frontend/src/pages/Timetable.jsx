@@ -1,6 +1,6 @@
 import {useState, useEffect} from "react";
-
 import {useAuth} from "../hooks/useAuth";
+import {useTheme} from "../hooks/useTheme";
 import {LoadingSpinner, Alert} from "../components/shared";
 import {timetableAPI} from "../services/api";
 
@@ -24,6 +24,8 @@ const COLORS = [
 
 const Timetable = () => {
   const {user} = useAuth();
+  const {theme} = useTheme();
+  const isDark = theme === "dark";
   const isStudent = user?.role === "student";
 
   const [timetable, setTimetable] = useState(null);
@@ -35,7 +37,6 @@ const Timetable = () => {
 
   useEffect(() => {
     fetchTimetable();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchTimetable = async () => {
@@ -88,8 +89,8 @@ const Timetable = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className={`min-h-screen ${isDark ? "bg-background" : "bg-gray-50"}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
           <Alert type="error" message={error} onClose={() => setError(null)} />
         )}
@@ -101,20 +102,40 @@ const Timetable = () => {
           />
         )}
 
+        {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">📅 My Timetable</h1>
+          <div>
+            <h1
+              className={`text-2xl font-semibold ${
+                isDark ? "text-foreground" : "text-gray-900"
+              }`}
+            >
+              Timetable
+            </h1>
+            <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+              Your weekly class schedule
+            </p>
+          </div>
           <div className="flex gap-3">
             {isStudent && (
               <button
                 onClick={handleAutoPopulate}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                className={`px-4 py-2 rounded-md text-sm font-medium border transition-colors ${
+                  isDark
+                    ? "border-border text-foreground hover:bg-accent"
+                    : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                }`}
               >
                 Auto-fill from Classes
               </button>
             )}
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                isDark
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-gray-900 text-white hover:bg-gray-800"
+              }`}
             >
               + Add Slot
             </button>
@@ -122,38 +143,87 @@ const Timetable = () => {
         </div>
 
         {/* Weekly Grid View */}
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {DAYS.map((day) => (
-            <div key={day} className="bg-gray-800 rounded-lg overflow-hidden">
-              <div className="bg-gray-700 px-3 py-2 text-center">
-                <h3 className="text-white font-medium">{day}</h3>
+            <div
+              key={day}
+              className={`rounded-xl border overflow-hidden ${
+                isDark ? "bg-card border-border" : "bg-white border-gray-200"
+              }`}
+            >
+              <div
+                className={`px-4 py-3 flex items-center gap-2 border-b ${
+                  isDark ? "border-border" : "border-gray-200"
+                }`}
+              >
+                <span className="text-blue-600">📅</span>
+                <h3
+                  className={`font-semibold ${
+                    isDark ? "text-foreground" : "text-gray-900"
+                  }`}
+                >
+                  {day}
+                </h3>
               </div>
-              <div className="p-2 space-y-2 min-h-[400px]">
+              <div className="p-4">
                 {getSlotsByDay(day).length === 0 ? (
-                  <p className="text-gray-500 text-sm text-center py-4">
-                    No classes
+                  <p
+                    className={`text-sm text-center py-4 ${
+                      isDark ? "text-muted-foreground" : "text-gray-400"
+                    }`}
+                  >
+                    No classes scheduled
                   </p>
                 ) : (
-                  getSlotsByDay(day).map((slot) => (
-                    <div
-                      key={slot._id}
-                      className="rounded p-2 text-sm cursor-pointer hover:opacity-80"
-                      style={{backgroundColor: slot.color || "#3B82F6"}}
-                      onClick={() => setEditingSlot(slot)}
-                    >
-                      <p className="font-medium text-white truncate">
-                        {slot.subject}
-                      </p>
-                      <p className="text-white/80 text-xs">
-                        {slot.startTime} - {slot.endTime}
-                      </p>
-                      {slot.room && (
-                        <p className="text-white/70 text-xs truncate">
-                          📍 {slot.room}
-                        </p>
-                      )}
-                    </div>
-                  ))
+                  <div className="space-y-2">
+                    {getSlotsByDay(day).map((slot) => (
+                      <div
+                        key={slot._id}
+                        onClick={() => setEditingSlot(slot)}
+                        className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                          isDark
+                            ? "border-border hover:bg-accent"
+                            : "border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-2 h-10 rounded-full"
+                            style={{backgroundColor: slot.color || "#3B82F6"}}
+                          />
+                          <div>
+                            <p
+                              className={`font-medium ${
+                                isDark ? "text-foreground" : "text-gray-900"
+                              }`}
+                            >
+                              {slot.subject}
+                            </p>
+                            <p
+                              className={`text-sm ${
+                                isDark
+                                  ? "text-muted-foreground"
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              {slot.startTime} - {slot.endTime}
+                            </p>
+                          </div>
+                        </div>
+                        {slot.room && (
+                          <span
+                            className={`px-2 py-1 text-xs rounded-md ${
+                              isDark
+                                ? "bg-secondary text-secondary-foreground"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {slot.room}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
@@ -164,6 +234,7 @@ const Timetable = () => {
         {(showAddModal || editingSlot) && (
           <SlotModal
             slot={editingSlot}
+            isDark={isDark}
             onClose={() => {
               setShowAddModal(false);
               setEditingSlot(null);
@@ -184,7 +255,7 @@ const Timetable = () => {
   );
 };
 
-const SlotModal = ({slot, onClose, onSuccess, onDelete}) => {
+const SlotModal = ({slot, isDark, onClose, onSuccess, onDelete}) => {
   const [formData, setFormData] = useState({
     day: slot?.day || "Monday",
     startTime: slot?.startTime || "09:00",
@@ -207,7 +278,6 @@ const SlotModal = ({slot, onClose, onSuccess, onDelete}) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-
     try {
       if (slot) {
         await timetableAPI.updateSlot(slot._id, formData);
@@ -222,22 +292,40 @@ const SlotModal = ({slot, onClose, onSuccess, onDelete}) => {
     }
   };
 
+  const inputClass = `w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+    isDark
+      ? "bg-input-background border-border text-foreground"
+      : "bg-white border-gray-300 text-gray-900"
+  }`;
+
+  const labelClass = `block text-sm font-medium mb-1 ${
+    isDark ? "text-foreground" : "text-gray-700"
+  }`;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold text-white mb-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div
+        className={`rounded-xl p-6 w-full max-w-md ${
+          isDark ? "bg-card border border-border" : "bg-white"
+        }`}
+      >
+        <h2
+          className={`text-xl font-semibold mb-4 ${
+            isDark ? "text-foreground" : "text-gray-900"
+          }`}
+        >
           {slot ? "Edit Slot" : "Add Slot"}
         </h2>
         {error && <Alert type="error" message={error} />}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Day *</label>
+            <label className={labelClass}>Day *</label>
             <select
               name="day"
               value={formData.day}
               onChange={handleChange}
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             >
               {DAYS.map((day) => (
                 <option key={day} value={day}>
@@ -249,82 +337,76 @@ const SlotModal = ({slot, onClose, onSuccess, onDelete}) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-300 mb-1">
-                Start Time *
-              </label>
+              <label className={labelClass}>Start Time *</label>
               <input
                 type="time"
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-300 mb-1">
-                End Time *
-              </label>
+              <label className={labelClass}>End Time *</label>
               <input
                 type="time"
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+                className={inputClass}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Subject *
-            </label>
+            <label className={labelClass}>Subject *</label>
             <input
               type="text"
               name="subject"
               value={formData.subject}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Room</label>
+            <label className={labelClass}>Room</label>
             <input
               type="text"
               name="room"
               value={formData.room}
               onChange={handleChange}
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Meet Link
-            </label>
+            <label className={labelClass}>Meet Link</label>
             <input
               type="url"
               name="meetLink"
               value={formData.meetLink}
               onChange={handleChange}
               placeholder="https://meet.google.com/..."
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Color</label>
+            <label className={labelClass}>Color</label>
             <div className="flex gap-2">
               {COLORS.map((color) => (
                 <button
                   key={color}
                   type="button"
                   onClick={() => setFormData((prev) => ({...prev, color}))}
-                  className={`w-8 h-8 rounded-full ${
-                    formData.color === color ? "ring-2 ring-white" : ""
+                  className={`w-8 h-8 rounded-full transition-all ${
+                    formData.color === color
+                      ? "ring-2 ring-offset-2 ring-blue-500"
+                      : ""
                   }`}
                   style={{backgroundColor: color}}
                 />
@@ -338,7 +420,7 @@ const SlotModal = ({slot, onClose, onSuccess, onDelete}) => {
                 <button
                   type="button"
                   onClick={onDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  className="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
                 >
                   Delete
                 </button>
@@ -348,14 +430,18 @@ const SlotModal = ({slot, onClose, onSuccess, onDelete}) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500"
+                className={`px-4 py-2 rounded-md text-sm transition-colors ${
+                  isDark
+                    ? "bg-secondary text-secondary-foreground hover:bg-accent"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 {isSubmitting ? "Saving..." : "Save"}
               </button>

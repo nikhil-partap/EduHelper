@@ -15,19 +15,23 @@ const FormInput = ({
   const isDark = theme === "dark";
 
   return (
-    <div className="space-y-1">
-      <label
-        htmlFor={name}
-        className={`block text-sm font-medium ${
-          isDark ? "text-gray-200" : "text-gray-700"
-        }`}
-      >
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
+    <div className="space-y-1.5">
+      {label && (
+        <label
+          htmlFor={name}
+          className={`block text-sm font-medium ${
+            isDark ? "text-foreground" : "text-gray-700"
+          }`}
+        >
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+      )}
       <div className="relative">
         {icon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span className={isDark ? "text-gray-500" : "text-gray-400"}>
+            <span
+              className={isDark ? "text-muted-foreground" : "text-gray-400"}
+            >
               {icon}
             </span>
           </div>
@@ -41,26 +45,26 @@ const FormInput = ({
           onChange={onChange}
           placeholder={placeholder}
           className={`
-            appearance-none relative block w-full px-3 py-2 border rounded-md 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-            focus:z-10 sm:text-sm transition-colors
+            w-full px-3 py-2 rounded-md border text-sm
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            transition-colors
             ${icon ? "pl-10" : ""}
             ${
               error
-                ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                ? "border-red-500 focus:ring-red-500"
                 : isDark
-                ? "border-zinc-700"
+                ? "border-border"
                 : "border-gray-300"
             }
             ${
               isDark
-                ? "bg-zinc-800 text-white placeholder-gray-500"
-                : "bg-white text-gray-900 placeholder-gray-500"
+                ? "bg-input-background text-foreground placeholder-muted-foreground"
+                : "bg-white text-gray-900 placeholder-gray-400"
             }
           `}
         />
       </div>
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      {error && <p className="text-red-500 text-xs">{error}</p>}
     </div>
   );
 };

@@ -28,35 +28,43 @@ const Login = () => {
 
   return (
     <div
-      className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
-        isDark ? "bg-black" : "bg-gray-50"
+      className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${
+        isDark ? "bg-background" : "bg-gray-50"
       }`}
     >
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <span className="text-white text-2xl font-bold">CP</span>
+      <div className="max-w-md w-full">
+        {/* Logo & Header */}
+        <div className="text-center mb-8">
+          <div className="mx-auto h-14 w-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+            <span className="text-white text-xl font-bold">CP</span>
           </div>
-          <h2
-            className={`text-3xl font-extrabold ${
-              isDark ? "text-white" : "text-gray-900"
+          <h1
+            className={`text-2xl font-semibold ${
+              isDark ? "text-foreground" : "text-gray-900"
             }`}
           >
             Welcome to Class Pilot
-          </h2>
+          </h1>
           <p
-            className={`mt-2 text-sm ${
-              isDark ? "text-gray-400" : "text-gray-600"
+            className={`mt-2 ${
+              isDark ? "text-muted-foreground" : "text-gray-500"
             }`}
           >
             Sign in to your classroom management system
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && <Alert type="error" message={error} onClose={clearError} />}
+        {/* Form Card */}
+        <div
+          className={`rounded-xl border p-8 ${
+            isDark ? "bg-card border-border" : "bg-white border-gray-200"
+          }`}
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <Alert type="error" message={error} onClose={clearError} />
+            )}
 
-          <div className="space-y-4">
             <FormInput
               label="Email Address"
               type="email"
@@ -78,34 +86,43 @@ const Login = () => {
               required
               icon="🔒"
             />
-          </div>
 
-          <div>
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              className={`w-full py-3 px-4 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                isDark
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-gray-900 text-white hover:bg-gray-800"
+              }`}
             >
               {loading ? (
-                <div className="flex items-center space-x-2">
+                <span className="flex items-center justify-center gap-2">
                   <LoadingSpinner size="sm" text="" />
-                  <span>Signing in...</span>
-                </div>
+                  Signing in...
+                </span>
               ) : (
                 "Sign in"
               )}
             </button>
-          </div>
+          </form>
 
-          <div className="text-center">
-            <Link
-              to="/register"
-              className="text-blue-500 hover:text-blue-400 text-sm block w-full"
-            >
-              Don't have an account? Sign up
-            </Link>
+          <div
+            className={`mt-6 pt-6 border-t text-center ${
+              isDark ? "border-border" : "border-gray-200"
+            }`}
+          >
+            <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+              Don't have an account?{" "}
+              <Link
+                to="/register"
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Sign up
+              </Link>
+            </p>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

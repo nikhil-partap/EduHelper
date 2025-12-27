@@ -37,6 +37,7 @@ import TakeQuiz from "./pages/TakeQuiz";
 import QuizStats from "./pages/QuizStats";
 import StudyPlanner from "./pages/StudyPlanner";
 import StudentReports from "./pages/StudentReports";
+import Portfolio from "./pages/Portfolio";
 
 // Protected Route Component
 const ProtectedRoute = ({children}) => {
@@ -234,6 +235,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <StudentReports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portfolio"
+            element={
+              <ProtectedRoute>
+                <Portfolio />
               </ProtectedRoute>
             }
           />

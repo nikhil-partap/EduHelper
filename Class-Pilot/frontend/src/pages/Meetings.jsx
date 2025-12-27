@@ -1,11 +1,13 @@
 import {useState, useEffect} from "react";
-
 import {useAuth} from "../hooks/useAuth";
+import {useTheme} from "../hooks/useTheme";
 import {LoadingSpinner, Alert} from "../components/shared";
 import {classAPI, meetingAPI} from "../services/api";
 
 const Meetings = () => {
   const {user} = useAuth();
+  const {theme} = useTheme();
+  const isDark = theme === "dark";
   const isTeacher = user?.role === "teacher";
 
   const [classes, setClasses] = useState([]);
@@ -19,14 +21,12 @@ const Meetings = () => {
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (selectedClass) {
       fetchClassMeetings();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClass]);
 
   const fetchData = async () => {
@@ -90,14 +90,16 @@ const Meetings = () => {
   };
 
   const getStatusBadge = (status) => {
-    const colors = {
+    const styles = {
       scheduled: "bg-blue-100 text-blue-800",
       live: "bg-green-100 text-green-800",
       completed: "bg-gray-100 text-gray-800",
       cancelled: "bg-red-100 text-red-800",
     };
     return (
-      <span className={`px-2 py-1 text-xs rounded-full ${colors[status]}`}>
+      <span
+        className={`px-2 py-1 text-xs font-medium rounded-md ${styles[status]}`}
+      >
         {status === "live" ? "🔴 LIVE" : status}
       </span>
     );
@@ -112,8 +114,8 @@ const Meetings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className={`min-h-screen ${isDark ? "bg-background" : "bg-gray-50"}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
           <Alert type="error" message={error} onClose={() => setError(null)} />
         )}
@@ -125,143 +127,203 @@ const Meetings = () => {
           />
         )}
 
-        {/* Upcoming Meetings */}
-        {upcomingMeetings.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-white mb-4">
-              📹 Upcoming Meetings
-            </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {upcomingMeetings.slice(0, 3).map((meeting) => (
-                <div
-                  key={meeting._id}
-                  className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4 border border-blue-700"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-white font-medium">{meeting.title}</h3>
-                    {getStatusBadge(meeting.status)}
-                  </div>
-                  <p className="text-gray-300 text-sm mb-2">
-                    {meeting.classId?.className} - {meeting.classId?.subject}
-                  </p>
-                  <p className="text-gray-400 text-sm mb-3">
-                    📅 {new Date(meeting.scheduledAt).toLocaleString()}
-                  </p>
-                  <button
-                    onClick={() => handleJoinMeeting(meeting)}
-                    className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    {meeting.status === "live" ? "Join Now" : "Open Link"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Class Meetings */}
+        {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">📹 Meetings</h1>
-          <div className="flex gap-4">
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="px-4 py-2 bg-gray-800 text-white border border-gray-700 rounded-lg"
+          <div>
+            <h1
+              className={`text-2xl font-semibold ${
+                isDark ? "text-foreground" : "text-gray-900"
+              }`}
             >
-              {classes.map((cls) => (
-                <option key={cls._id} value={cls._id}>
-                  {cls.className} - {cls.subject}
-                </option>
-              ))}
-            </select>
-            {isTeacher && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                + Schedule Meeting
-              </button>
-            )}
+              Meetings
+            </h1>
+            <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+              {isTeacher
+                ? "Schedule and manage virtual meetings"
+                : "View and join scheduled meetings"}
+            </p>
           </div>
+          {isTeacher && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                isDark
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-gray-900 text-white hover:bg-gray-800"
+              }`}
+            >
+              <span>+</span>
+              Schedule Meeting
+            </button>
+          )}
         </div>
 
+        {/* Class Selector */}
+        <div
+          className={`rounded-xl border p-4 mb-6 ${
+            isDark ? "bg-card border-border" : "bg-white border-gray-200"
+          }`}
+        >
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className={`w-full md:w-auto px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              isDark
+                ? "bg-input-background border-border text-foreground"
+                : "bg-white border-gray-300 text-gray-900"
+            }`}
+          >
+            {classes.map((cls) => (
+              <option key={cls._id} value={cls._id}>
+                {cls.className} - {cls.subject}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Meeting Cards */}
         {meetings.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800 rounded-lg">
-            <p className="text-gray-400">
-              No meetings scheduled for this class
+          <div
+            className={`rounded-xl border p-12 text-center ${
+              isDark ? "bg-card border-border" : "bg-white border-gray-200"
+            }`}
+          >
+            <div className="text-6xl mb-4">📹</div>
+            <h3
+              className={`text-lg font-medium mb-2 ${
+                isDark ? "text-foreground" : "text-gray-900"
+              }`}
+            >
+              No Meetings Scheduled
+            </h3>
+            <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+              {isTeacher
+                ? "Schedule a meeting to get started"
+                : "No meetings scheduled for this class"}
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {meetings.map((meeting) => (
               <div
                 key={meeting._id}
-                className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+                className={`rounded-xl border overflow-hidden ${
+                  isDark ? "bg-card border-border" : "bg-white border-gray-200"
+                }`}
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-white">
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-600">📹</span>
+                      <h3
+                        className={`font-semibold ${
+                          isDark ? "text-foreground" : "text-gray-900"
+                        }`}
+                      >
                         {meeting.title}
                       </h3>
-                      {getStatusBadge(meeting.status)}
                     </div>
-                    {meeting.description && (
-                      <p className="text-gray-400 text-sm mb-2">
-                        {meeting.description}
-                      </p>
-                    )}
-                    <div className="flex gap-4 text-sm text-gray-500">
-                      <span>
-                        📅 {new Date(meeting.scheduledAt).toLocaleString()}
+                    {getStatusBadge(meeting.status)}
+                  </div>
+
+                  {meeting.description && (
+                    <p
+                      className={`text-sm mb-4 ${
+                        isDark ? "text-muted-foreground" : "text-gray-600"
+                      }`}
+                    >
+                      {meeting.description}
+                    </p>
+                  )}
+
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={
+                          isDark ? "text-muted-foreground" : "text-gray-400"
+                        }
+                      >
+                        📅
                       </span>
-                      <span>⏱️ {meeting.duration} min</span>
-                      {meeting.attendees?.length > 0 && (
-                        <span>
-                          👥{" "}
-                          {meeting.attendees.filter((a) => a.attended).length}{" "}
-                          attended
-                        </span>
-                      )}
+                      <span
+                        className={isDark ? "text-foreground" : "text-gray-700"}
+                      >
+                        {new Date(meeting.scheduledAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={
+                          isDark ? "text-muted-foreground" : "text-gray-400"
+                        }
+                      >
+                        ⏱
+                      </span>
+                      <span
+                        className={isDark ? "text-foreground" : "text-gray-700"}
+                      >
+                        {new Date(meeting.scheduledAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}{" "}
+                        ({meeting.duration} min)
+                      </span>
                     </div>
                   </div>
+
                   <div className="flex gap-2">
+                    {isTeacher && (
+                      <button
+                        onClick={() => handleDelete(meeting._id)}
+                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium border transition-colors ${
+                          isDark
+                            ? "border-border text-foreground hover:bg-accent"
+                            : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {meeting.status === "scheduled" ? "Edit" : "Delete"}
+                      </button>
+                    )}
                     {meeting.status !== "completed" &&
                       meeting.status !== "cancelled" && (
                         <button
                           onClick={() => handleJoinMeeting(meeting)}
-                          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                            isDark
+                              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                              : "bg-gray-900 text-white hover:bg-gray-800"
+                          }`}
                         >
-                          {meeting.status === "live" ? "Join" : "Open"}
+                          <span className="flex items-center justify-center gap-2">
+                            <span>🔗</span>
+                            {meeting.status === "live" ? "Join Now" : "Join"}
+                          </span>
                         </button>
                       )}
-                    {isTeacher && meeting.status === "scheduled" && (
-                      <button
-                        onClick={() => handleUpdateStatus(meeting._id, "live")}
-                        className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                      >
-                        Start
-                      </button>
-                    )}
-                    {isTeacher && meeting.status === "live" && (
-                      <button
-                        onClick={() =>
-                          handleUpdateStatus(meeting._id, "completed")
-                        }
-                        className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-500"
-                      >
-                        End
-                      </button>
-                    )}
-                    {isTeacher && (
-                      <button
-                        onClick={() => handleDelete(meeting._id)}
-                        className="px-3 py-1 bg-red-800 text-white text-sm rounded hover:bg-red-700"
-                      >
-                        Delete
-                      </button>
-                    )}
                   </div>
+
+                  {isTeacher && meeting.status === "scheduled" && (
+                    <button
+                      onClick={() => handleUpdateStatus(meeting._id, "live")}
+                      className="w-full mt-2 py-2 px-4 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
+                    >
+                      Start Meeting
+                    </button>
+                  )}
+                  {isTeacher && meeting.status === "live" && (
+                    <button
+                      onClick={() =>
+                        handleUpdateStatus(meeting._id, "completed")
+                      }
+                      className={`w-full mt-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                        isDark
+                          ? "bg-secondary text-secondary-foreground hover:bg-accent"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      End Meeting
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -271,6 +333,7 @@ const Meetings = () => {
         {showCreateModal && (
           <CreateMeetingModal
             classId={selectedClass}
+            isDark={isDark}
             onClose={() => setShowCreateModal(false)}
             onSuccess={() => {
               setShowCreateModal(false);
@@ -285,7 +348,7 @@ const Meetings = () => {
   );
 };
 
-const CreateMeetingModal = ({classId, onClose, onSuccess}) => {
+const CreateMeetingModal = ({classId, isDark, onClose, onSuccess}) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -306,7 +369,6 @@ const CreateMeetingModal = ({classId, onClose, onSuccess}) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-
     try {
       await meetingAPI.createMeeting({...formData, classId});
       onSuccess();
@@ -317,97 +379,119 @@ const CreateMeetingModal = ({classId, onClose, onSuccess}) => {
     }
   };
 
+  const inputClass = `w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+    isDark
+      ? "bg-input-background border-border text-foreground"
+      : "bg-white border-gray-300 text-gray-900"
+  }`;
+
+  const labelClass = `block text-sm font-medium mb-1 ${
+    isDark ? "text-foreground" : "text-gray-700"
+  }`;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-lg">
-        <h2 className="text-xl font-bold text-white mb-4">Schedule Meeting</h2>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div
+        className={`rounded-xl p-6 w-full max-w-lg ${
+          isDark ? "bg-card border border-border" : "bg-white"
+        }`}
+      >
+        <h2
+          className={`text-xl font-semibold mb-4 ${
+            isDark ? "text-foreground" : "text-gray-900"
+          }`}
+        >
+          Schedule New Meeting
+        </h2>
         {error && <Alert type="error" message={error} />}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Title *</label>
+            <label className={labelClass}>Meeting Title *</label>
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
+              placeholder="e.g., Parent-Teacher Conference"
               required
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Description
-            </label>
+            <label className={labelClass}>Description</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={2}
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Meeting Link *
-            </label>
-            <input
-              type="url"
-              name="meetLink"
-              value={formData.meetLink}
-              onChange={handleChange}
-              placeholder="https://meet.google.com/..."
-              required
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-300 mb-1">
-                Platform
-              </label>
-              <select
-                name="meetingType"
-                value={formData.meetingType}
-                onChange={handleChange}
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
-              >
-                <option value="google_meet">Google Meet</option>
-                <option value="zoom">Zoom</option>
-                <option value="teams">Microsoft Teams</option>
-                <option value="other">Other</option>
-              </select>
+              <label className={labelClass}>Date *</label>
+              <input
+                type="date"
+                name="date"
+                onChange={(e) => {
+                  const time = formData.scheduledAt
+                    ? formData.scheduledAt.split("T")[1]
+                    : "09:00";
+                  setFormData((prev) => ({
+                    ...prev,
+                    scheduledAt: `${e.target.value}T${time}`,
+                  }));
+                }}
+                required
+                className={inputClass}
+              />
             </div>
             <div>
-              <label className="block text-sm text-gray-300 mb-1">
-                Duration (min)
-              </label>
+              <label className={labelClass}>Time *</label>
               <input
-                type="number"
-                name="duration"
-                value={formData.duration}
-                onChange={handleChange}
-                min={15}
-                max={480}
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+                type="time"
+                name="time"
+                onChange={(e) => {
+                  const date = formData.scheduledAt
+                    ? formData.scheduledAt.split("T")[0]
+                    : new Date().toISOString().split("T")[0];
+                  setFormData((prev) => ({
+                    ...prev,
+                    scheduledAt: `${date}T${e.target.value}`,
+                  }));
+                }}
+                required
+                className={inputClass}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Scheduled Time *
-            </label>
+            <label className={labelClass}>Duration (minutes)</label>
             <input
-              type="datetime-local"
-              name="scheduledAt"
-              value={formData.scheduledAt}
+              type="number"
+              name="duration"
+              value={formData.duration}
               onChange={handleChange}
+              min={15}
+              max={480}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Meeting Link *</label>
+            <input
+              type="url"
+              name="meetLink"
+              value={formData.meetLink}
+              onChange={handleChange}
+              placeholder="https://meet.example.com/..."
               required
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             />
           </div>
 
@@ -415,16 +499,20 @@ const CreateMeetingModal = ({classId, onClose, onSuccess}) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500"
+              className={`px-4 py-2 rounded-md text-sm transition-colors ${
+                isDark
+                  ? "bg-secondary text-secondary-foreground hover:bg-accent"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {isSubmitting ? "Scheduling..." : "Schedule"}
+              {isSubmitting ? "Scheduling..." : "Schedule Meeting"}
             </button>
           </div>
         </form>

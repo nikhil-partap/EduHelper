@@ -177,4 +177,15 @@ export const meetingAPI = {
   getMeeting: (meetingId) => api.get(`/api/meeting/${meetingId}`),
 };
 
+// Portfolio API calls
+export const portfolioAPI = {
+  // Get student portfolio with analytics
+  getStudentPortfolio: (studentId, classId) =>
+    api.get(`/api/portfolio/${studentId}/${classId}`),
+
+  // Get class-wide analytics (teacher only)
+  getClassAnalytics: (classId) =>
+    api.get(`/api/portfolio/class/${classId}/analytics`),
+};
+
 export default api;

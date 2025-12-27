@@ -5,20 +5,20 @@ const LoadingSpinner = ({size = "md", text = "Loading..."}) => {
   const isDark = theme === "dark";
 
   const sizeClasses = {
-    sm: "h-6 w-6",
-    md: "h-12 w-12",
-    lg: "h-16 w-16",
+    sm: "h-5 w-5 border-2",
+    md: "h-10 w-10 border-2",
+    lg: "h-14 w-14 border-3",
   };
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center gap-3">
       <div
-        className={`animate-spin rounded-full border-b-2 border-blue-500 ${sizeClasses[size]}`}
-      ></div>
+        className={`animate-spin rounded-full border-blue-500 border-t-transparent ${sizeClasses[size]}`}
+      />
       {text && (
         <p
-          className={`mt-4 text-sm ${
-            isDark ? "text-gray-400" : "text-gray-600"
+          className={`text-sm ${
+            isDark ? "text-muted-foreground" : "text-gray-500"
           }`}
         >
           {text}

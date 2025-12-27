@@ -1,12 +1,15 @@
 import {useState, useEffect} from "react";
 import {useClass} from "../hooks/useClass";
 import {useAuth} from "../hooks/useAuth";
+import {useTheme} from "../hooks/useTheme";
 import {quizAPI, gradeAPI} from "../services/api";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
 
 const Grades = () => {
   const {user} = useAuth();
+  const {theme} = useTheme();
+  const isDark = theme === "dark";
   const isTeacher = user?.role === "teacher";
   const {classes, fetchClasses} = useClass();
   const [selectedClass, setSelectedClass] = useState(null);
@@ -21,20 +24,16 @@ const Grades = () => {
     if (classes.length === 0) {
       fetchClasses();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classes.length]);
 
   const fetchGrades = async (classId) => {
     try {
       setLoading(true);
       setError(null);
-
       if (isTeacher) {
-        // Teacher sees all class grades
         const response = await gradeAPI.getClassGrades(classId);
         setManualGrades(response.data.gradesByStudent || []);
       } else {
-        // Student sees their own grades
         const [attemptsRes, gradesRes] = await Promise.all([
           quizAPI.getStudentAttempts(classId, user.id),
           gradeAPI.getStudentGrades(classId, user.id),
@@ -69,10 +68,10 @@ const Grades = () => {
   };
 
   const getGradeColor = (percentage) => {
-    if (percentage >= 90) return "text-green-400";
-    if (percentage >= 75) return "text-blue-400";
-    if (percentage >= 60) return "text-yellow-400";
-    return "text-red-400";
+    if (percentage >= 90) return "text-green-600";
+    if (percentage >= 75) return "text-blue-600";
+    if (percentage >= 60) return "text-yellow-600";
+    return "text-red-600";
   };
 
   const getGradeLetter = (percentage) => {
@@ -91,359 +90,416 @@ const Grades = () => {
   const hasManualGrades = manualGrades.length > 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">My Grades</h1>
-        <p className="mt-2 text-gray-400">
-          View your quiz scores and academic performance
-        </p>
-      </div>
-
-      {error && (
-        <Alert type="error" message={error} onClose={() => setError(null)} />
-      )}
-
-      {/* Class Selection */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
-        <label className="block text-sm font-medium text-gray-200 mb-2">
-          Select Class
-        </label>
-        <select
-          value={selectedClass?._id || ""}
-          onChange={(e) => handleClassSelect(e.target.value)}
-          className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Choose a class...</option>
-          {classes.map((cls) => (
-            <option key={cls._id} value={cls._id}>
-              {cls.className} - {cls.subject}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <LoadingSpinner size="lg" text="Loading grades..." />
-        </div>
-      ) : selectedClass && (hasQuizGrades || hasManualGrades) ? (
-        <>
-          {/* Overall Performance */}
-          {gradeSummary && (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
-              <h2 className="text-xl font-semibold text-white mb-4">
-                Grade Summary
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <p className="text-sm text-gray-400 mb-2">Quiz Average</p>
-                  <p
-                    className={`text-3xl font-bold ${getGradeColor(
-                      overallGrade || 0
-                    )}`}
-                  >
-                    {overallGrade ? `${overallGrade}%` : "N/A"}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-400 mb-2">
-                    Manual Grades Avg
-                  </p>
-                  <p
-                    className={`text-3xl font-bold ${getGradeColor(
-                      gradeSummary.averageScore || 0
-                    )}`}
-                  >
-                    {gradeSummary.averageScore
-                      ? `${gradeSummary.averageScore.toFixed(1)}%`
-                      : "N/A"}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-400 mb-2">Quizzes Taken</p>
-                  <p className="text-3xl font-bold text-white">
-                    {attempts.length}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-400 mb-2">Manual Grades</p>
-                  <p className="text-3xl font-bold text-white">
-                    {manualGrades.length}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {!gradeSummary && hasQuizGrades && (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
-              <h2 className="text-xl font-semibold text-white mb-4">
-                Overall Performance
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <p className="text-sm text-gray-400 mb-2">Average Score</p>
-                  <p
-                    className={`text-4xl font-bold ${getGradeColor(
-                      overallGrade
-                    )}`}
-                  >
-                    {overallGrade}%
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-400 mb-2">Grade</p>
-                  <p
-                    className={`text-4xl font-bold ${getGradeColor(
-                      overallGrade
-                    )}`}
-                  >
-                    {getGradeLetter(overallGrade)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-400 mb-2">Quizzes Taken</p>
-                  <p className="text-4xl font-bold text-white">
-                    {attempts.length}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tabs */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow mb-6">
-            <div className="border-b border-zinc-800">
-              <nav className="flex -mb-px">
-                <button
-                  onClick={() => setActiveTab("quizzes")}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === "quizzes"
-                      ? "border-blue-500 text-blue-400"
-                      : "border-transparent text-gray-400 hover:text-gray-300"
-                  }`}
-                >
-                  Quiz Scores ({attempts.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("manual")}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === "manual"
-                      ? "border-blue-500 text-blue-400"
-                      : "border-transparent text-gray-400 hover:text-gray-300"
-                  }`}
-                >
-                  Manual Grades ({manualGrades.length})
-                </button>
-              </nav>
-            </div>
-
-            <div className="p-6">
-              {activeTab === "quizzes" && (
-                <>
-                  {hasQuizGrades ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-zinc-800">
-                        <thead className="bg-zinc-800">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Date
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Score
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Percentage
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Grade
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Time Taken
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-                          {attempts
-                            .sort(
-                              (a, b) =>
-                                new Date(b.attemptedAt) -
-                                new Date(a.attemptedAt)
-                            )
-                            .map((attempt, index) => (
-                              <tr key={index}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-white">
-                                    {new Date(
-                                      attempt.attemptedAt
-                                    ).toLocaleDateString("en-US", {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-white">
-                                    {attempt.score}/{attempt.totalMarks}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div
-                                    className={`text-sm font-semibold ${getGradeColor(
-                                      attempt.percentage
-                                    )}`}
-                                  >
-                                    {attempt.percentage}%
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span
-                                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                      attempt.percentage >= 90
-                                        ? "bg-green-100 text-green-800"
-                                        : attempt.percentage >= 75
-                                        ? "bg-blue-100 text-blue-800"
-                                        : attempt.percentage >= 60
-                                        ? "bg-yellow-100 text-yellow-800"
-                                        : "bg-red-100 text-red-800"
-                                    }`}
-                                  >
-                                    {getGradeLetter(attempt.percentage)}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-400">
-                                    {attempt.timeTaken
-                                      ? `${Math.floor(
-                                          attempt.timeTaken / 60
-                                        )}m ${attempt.timeTaken % 60}s`
-                                      : "N/A"}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-4xl mb-3">📝</div>
-                      <p className="text-gray-400">No quiz scores yet</p>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {activeTab === "manual" && (
-                <>
-                  {hasManualGrades ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-zinc-800">
-                        <thead className="bg-zinc-800">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Title
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Type
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Score
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Percentage
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                              Date
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-                          {manualGrades.map((grade, index) => {
-                            const percentage =
-                              (grade.score / grade.maxScore) * 100;
-                            return (
-                              <tr key={index}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-white">
-                                    {grade.title}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className="px-2 py-1 text-xs rounded-full bg-zinc-700 text-gray-300 capitalize">
-                                    {grade.gradeType}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-white">
-                                    {grade.score}/{grade.maxScore}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div
-                                    className={`text-sm font-semibold ${getGradeColor(
-                                      percentage
-                                    )}`}
-                                  >
-                                    {percentage.toFixed(1)}%
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-400">
-                                    {new Date(
-                                      grade.createdAt
-                                    ).toLocaleDateString("en-US", {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-4xl mb-3">📊</div>
-                      <p className="text-gray-400">No manual grades yet</p>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      ) : selectedClass && !loading ? (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📝</div>
-            <h3 className="text-lg font-medium text-white mb-2">
-              No Grades Yet
-            </h3>
-            <p className="text-gray-400">
-              You haven't taken any quizzes in this class yet.
+    <div className={`min-h-screen ${isDark ? "bg-background" : "bg-gray-50"}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1
+              className={`text-2xl font-semibold ${
+                isDark ? "text-foreground" : "text-gray-900"
+              }`}
+            >
+              {isTeacher ? "Grade Book" : "My Grades"}
+            </h1>
+            <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+              {isTeacher
+                ? "Manage student grades"
+                : "View your grades across all classes"}
             </p>
           </div>
+          {isTeacher && (
+            <button
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors ${
+                isDark
+                  ? "border-border text-foreground hover:bg-accent"
+                  : "border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <span>📥</span>Export Grades
+            </button>
+          )}
         </div>
-      ) : (
-        !loading && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6">
+
+        {error && (
+          <Alert type="error" message={error} onClose={() => setError(null)} />
+        )}
+
+        <div
+          className={`rounded-xl border p-6 mb-6 ${
+            isDark ? "bg-card border-border" : "bg-white border-gray-200"
+          }`}
+        >
+          <label
+            className={`block text-sm font-medium mb-2 ${
+              isDark ? "text-foreground" : "text-gray-700"
+            }`}
+          >
+            Select Class
+          </label>
+          <select
+            value={selectedClass?._id || ""}
+            onChange={(e) => handleClassSelect(e.target.value)}
+            className={`w-full px-3 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              isDark
+                ? "bg-input-background border-border text-foreground"
+                : "bg-white border-gray-300 text-gray-900"
+            }`}
+          >
+            <option value="">Choose a class...</option>
+            {classes.map((cls) => (
+              <option key={cls._id} value={cls._id}>
+                {cls.className} - {cls.subject}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner size="lg" text="Loading grades..." />
+          </div>
+        ) : selectedClass && (hasQuizGrades || hasManualGrades) ? (
+          <>
+            {!isTeacher && hasQuizGrades && (
+              <div
+                className={`rounded-xl border p-6 mb-6 ${
+                  isDark ? "bg-card border-border" : "bg-white border-gray-200"
+                }`}
+              >
+                <h2
+                  className={`text-lg font-semibold mb-4 ${
+                    isDark ? "text-foreground" : "text-gray-900"
+                  }`}
+                >
+                  Overall Performance
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg text-white">
+                    <p className="text-sm opacity-90 mb-2">Average Score</p>
+                    <p className="text-4xl font-bold">{overallGrade}%</p>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg text-white">
+                    <p className="text-sm opacity-90 mb-2">Grade</p>
+                    <p className="text-4xl font-bold">
+                      {getGradeLetter(overallGrade)}
+                    </p>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg text-white">
+                    <p className="text-sm opacity-90 mb-2">Quizzes Taken</p>
+                    <p className="text-4xl font-bold">{attempts.length}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div
+              className={`rounded-xl border overflow-hidden ${
+                isDark ? "bg-card border-border" : "bg-white border-gray-200"
+              }`}
+            >
+              <div
+                className={`border-b ${
+                  isDark ? "border-border" : "border-gray-200"
+                }`}
+              >
+                <nav className="flex">
+                  <button
+                    onClick={() => setActiveTab("quizzes")}
+                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === "quizzes"
+                        ? "border-blue-500 text-blue-600"
+                        : isDark
+                        ? "border-transparent text-muted-foreground hover:text-foreground"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Quiz Scores ({attempts.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("manual")}
+                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === "manual"
+                        ? "border-blue-500 text-blue-600"
+                        : isDark
+                        ? "border-transparent text-muted-foreground hover:text-foreground"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Manual Grades ({manualGrades.length})
+                  </button>
+                </nav>
+              </div>
+              <div className="p-6">
+                {activeTab === "quizzes" && hasQuizGrades && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr className={isDark ? "bg-secondary" : "bg-gray-50"}>
+                          <th
+                            className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            Date
+                          </th>
+                          <th
+                            className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            Score
+                          </th>
+                          <th
+                            className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            Percentage
+                          </th>
+                          <th
+                            className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            Grade
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody
+                        className={`divide-y ${
+                          isDark ? "divide-border" : "divide-gray-200"
+                        }`}
+                      >
+                        {attempts
+                          .sort(
+                            (a, b) =>
+                              new Date(b.attemptedAt) - new Date(a.attemptedAt)
+                          )
+                          .map((attempt, index) => (
+                            <tr
+                              key={index}
+                              className={
+                                isDark ? "hover:bg-accent" : "hover:bg-gray-50"
+                              }
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`text-sm ${
+                                    isDark ? "text-foreground" : "text-gray-900"
+                                  }`}
+                                >
+                                  {new Date(
+                                    attempt.attemptedAt
+                                  ).toLocaleDateString()}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`text-sm ${
+                                    isDark ? "text-foreground" : "text-gray-900"
+                                  }`}
+                                >
+                                  {attempt.score}/{attempt.totalMarks}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`text-sm font-semibold ${getGradeColor(
+                                    attempt.percentage
+                                  )}`}
+                                >
+                                  {attempt.percentage}%
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                                    attempt.percentage >= 90
+                                      ? "bg-green-100 text-green-800"
+                                      : attempt.percentage >= 75
+                                      ? "bg-blue-100 text-blue-800"
+                                      : attempt.percentage >= 60
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}
+                                >
+                                  {getGradeLetter(attempt.percentage)}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {activeTab === "quizzes" && !hasQuizGrades && (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-3">📝</div>
+                    <p
+                      className={
+                        isDark ? "text-muted-foreground" : "text-gray-500"
+                      }
+                    >
+                      No quiz scores yet
+                    </p>
+                  </div>
+                )}
+                {activeTab === "manual" && hasManualGrades && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr className={isDark ? "bg-secondary" : "bg-gray-50"}>
+                          <th
+                            className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            Title
+                          </th>
+                          <th
+                            className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            Type
+                          </th>
+                          <th
+                            className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            Score
+                          </th>
+                          <th
+                            className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            Percentage
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody
+                        className={`divide-y ${
+                          isDark ? "divide-border" : "divide-gray-200"
+                        }`}
+                      >
+                        {manualGrades.map((grade, index) => {
+                          const percentage =
+                            (grade.score / grade.maxScore) * 100;
+                          return (
+                            <tr
+                              key={index}
+                              className={
+                                isDark ? "hover:bg-accent" : "hover:bg-gray-50"
+                              }
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`text-sm font-medium ${
+                                    isDark ? "text-foreground" : "text-gray-900"
+                                  }`}
+                                >
+                                  {grade.title}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`px-2 py-1 text-xs rounded-md capitalize ${
+                                    isDark
+                                      ? "bg-secondary text-secondary-foreground"
+                                      : "bg-gray-100 text-gray-700"
+                                  }`}
+                                >
+                                  {grade.gradeType}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`text-sm ${
+                                    isDark ? "text-foreground" : "text-gray-900"
+                                  }`}
+                                >
+                                  {grade.score}/{grade.maxScore}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`text-sm font-semibold ${getGradeColor(
+                                    percentage
+                                  )}`}
+                                >
+                                  {percentage.toFixed(1)}%
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {activeTab === "manual" && !hasManualGrades && (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-3">📊</div>
+                    <p
+                      className={
+                        isDark ? "text-muted-foreground" : "text-gray-500"
+                      }
+                    >
+                      No manual grades yet
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        ) : selectedClass && !loading ? (
+          <div
+            className={`rounded-xl border p-6 ${
+              isDark ? "bg-card border-border" : "bg-white border-gray-200"
+            }`}
+          >
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">🎯</div>
-              <h3 className="text-lg font-medium text-white mb-2">
-                Select a Class
+              <div className="text-6xl mb-4">📝</div>
+              <h3
+                className={`text-lg font-medium mb-2 ${
+                  isDark ? "text-foreground" : "text-gray-900"
+                }`}
+              >
+                No Grades Yet
               </h3>
-              <p className="text-gray-400">
-                Choose a class from the dropdown above to view your grades
+              <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+                You haven't taken any quizzes in this class yet.
               </p>
             </div>
           </div>
-        )
-      )}
+        ) : (
+          !loading && (
+            <div
+              className={`rounded-xl border p-6 ${
+                isDark ? "bg-card border-border" : "bg-white border-gray-200"
+              }`}
+            >
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🎯</div>
+                <h3
+                  className={`text-lg font-medium mb-2 ${
+                    isDark ? "text-foreground" : "text-gray-900"
+                  }`}
+                >
+                  Select a Class
+                </h3>
+                <p
+                  className={isDark ? "text-muted-foreground" : "text-gray-500"}
+                >
+                  Choose a class from the dropdown above to view your grades
+                </p>
+              </div>
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 };

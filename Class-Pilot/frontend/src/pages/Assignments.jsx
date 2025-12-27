@@ -2,12 +2,15 @@ import {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 
 import {useAuth} from "../hooks/useAuth";
+import {useTheme} from "../hooks/useTheme";
 import {LoadingSpinner, Alert} from "../components/shared";
 import {classAPI, assignmentAPI} from "../services/api";
 
 const Assignments = () => {
   const {user} = useAuth();
+  const {theme} = useTheme();
   const navigate = useNavigate();
+  const isDark = theme === "dark";
   const isTeacher = user?.role === "teacher";
 
   const [classes, setClasses] = useState([]);
@@ -113,8 +116,10 @@ const Assignments = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div
+      className={`min-h-screen py-6 ${isDark ? "bg-background" : "bg-gray-50"}`}
+    >
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         {error && (
           <Alert type="error" message={error} onClose={() => setError(null)} />
         )}
@@ -126,13 +131,34 @@ const Assignments = () => {
           />
         )}
 
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">📝 Assignments</h1>
-          <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h1
+              className={`text-2xl font-semibold ${
+                isDark ? "text-foreground" : "text-gray-900"
+              }`}
+            >
+              Assignments
+            </h1>
+            <p
+              className={`${
+                isDark ? "text-muted-foreground" : "text-gray-500"
+              }`}
+            >
+              {isTeacher
+                ? "Create and manage assignments"
+                : "View and submit your assignments"}
+            </p>
+          </div>
+          <div className="flex gap-3">
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="px-4 py-2 bg-gray-800 text-white border border-gray-700 rounded-lg"
+              className={`px-4 py-2 rounded-md border text-sm ${
+                isDark
+                  ? "bg-input-background text-foreground border-input"
+                  : "bg-white text-gray-900 border-gray-300"
+              } focus:outline-none focus:ring-2 focus:ring-ring`}
             >
               {classes.map((cls) => (
                 <option key={cls._id} value={cls._id}>
@@ -143,7 +169,11 @@ const Assignments = () => {
             {isTeacher && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isDark
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-gray-900 text-white hover:bg-gray-800"
+                }`}
               >
                 + Create Assignment
               </button>
@@ -154,36 +184,62 @@ const Assignments = () => {
         {isLoading ? (
           <LoadingSpinner />
         ) : assignments.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800 rounded-lg">
-            <p className="text-gray-400">No assignments found for this class</p>
+          <div
+            className={`text-center py-12 rounded-xl border ${
+              isDark ? "bg-card border-border" : "bg-white border-gray-200"
+            }`}
+          >
+            <span className="text-4xl mb-4 block">📋</span>
+            <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+              No assignments found for this class
+            </p>
           </div>
         ) : (
           <div className="grid gap-4">
             {assignments.map((assignment) => (
               <div
                 key={assignment._id}
-                className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+                className={`rounded-xl p-6 border transition-all hover:shadow-md ${
+                  isDark
+                    ? "bg-card border-border hover:border-ring"
+                    : "bg-white border-gray-200 hover:border-gray-300"
+                }`}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-white">
+                      <h3
+                        className={`text-lg font-semibold ${
+                          isDark ? "text-foreground" : "text-gray-900"
+                        }`}
+                      >
                         {assignment.title}
                       </h3>
                       {!isTeacher && getStatusBadge(assignment)}
                     </div>
-                    <p className="text-gray-400 text-sm mb-3">
+                    <p
+                      className={`text-sm mb-3 ${
+                        isDark ? "text-muted-foreground" : "text-gray-500"
+                      }`}
+                    >
                       {assignment.description}
                     </p>
-                    <div className="flex gap-4 text-sm text-gray-500">
-                      <span>
-                        📅 Due:{" "}
+                    <div
+                      className={`flex flex-wrap gap-4 text-sm ${
+                        isDark ? "text-muted-foreground" : "text-gray-500"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1">
+                        <span>📅</span> Due:{" "}
                         {new Date(assignment.dueDate).toLocaleDateString()}
                       </span>
-                      <span>📊 Marks: {assignment.totalMarks}</span>
+                      <span className="flex items-center gap-1">
+                        <span>📊</span> Marks: {assignment.totalMarks}
+                      </span>
                       {isTeacher && (
-                        <span>
-                          📥 Submissions: {assignment.submissions?.length || 0}
+                        <span className="flex items-center gap-1">
+                          <span>📥</span> Submissions:{" "}
+                          {assignment.submissions?.length || 0}
                         </span>
                       )}
                     </div>
@@ -191,14 +247,18 @@ const Assignments = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => navigate(`/assignment/${assignment._id}`)}
-                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        isDark
+                          ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                      }`}
                     >
                       {isTeacher ? "View" : "Open"}
                     </button>
                     {isTeacher && (
                       <button
                         onClick={() => handleDelete(assignment._id)}
-                        className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                        className="px-3 py-1.5 text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
                       >
                         Delete
                       </button>
@@ -213,6 +273,7 @@ const Assignments = () => {
         {showCreateModal && (
           <CreateAssignmentModal
             classId={selectedClass}
+            isDark={isDark}
             onClose={() => setShowCreateModal(false)}
             onSuccess={() => {
               setShowCreateModal(false);
@@ -226,7 +287,7 @@ const Assignments = () => {
   );
 };
 
-const CreateAssignmentModal = ({classId, onClose, onSuccess}) => {
+const CreateAssignmentModal = ({classId, isDark, onClose, onSuccess}) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -262,69 +323,81 @@ const CreateAssignmentModal = ({classId, onClose, onSuccess}) => {
     }
   };
 
+  const inputClass = `w-full px-3 py-2 rounded-md border text-sm ${
+    isDark
+      ? "bg-input-background text-foreground border-input focus:border-ring"
+      : "bg-white text-gray-900 border-gray-300 focus:border-gray-400"
+  } focus:outline-none focus:ring-2 focus:ring-ring/50`;
+
+  const labelClass = `block text-sm font-medium mb-1.5 ${
+    isDark ? "text-foreground" : "text-gray-700"
+  }`;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold text-white mb-4">Create Assignment</h2>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div
+        className={`rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto border ${
+          isDark ? "bg-card border-border" : "bg-white border-gray-200"
+        }`}
+      >
+        <h2
+          className={`text-xl font-semibold mb-4 ${
+            isDark ? "text-foreground" : "text-gray-900"
+          }`}
+        >
+          Create New Assignment
+        </h2>
         {error && <Alert type="error" message={error} />}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Title *</label>
+            <label className={labelClass}>Title *</label>
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Description
-            </label>
+            <label className={labelClass}>Description</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Instructions
-            </label>
+            <label className={labelClass}>Instructions</label>
             <textarea
               name="instructions"
               value={formData.instructions}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+              className={inputClass}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-300 mb-1">
-                Due Date *
-              </label>
+              <label className={labelClass}>Due Date *</label>
               <input
                 type="datetime-local"
                 name="dueDate"
                 value={formData.dueDate}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-300 mb-1">
-                Total Marks *
-              </label>
+              <label className={labelClass}>Total Marks *</label>
               <input
                 type="number"
                 name="totalMarks"
@@ -332,13 +405,17 @@ const CreateAssignmentModal = ({classId, onClose, onSuccess}) => {
                 onChange={handleChange}
                 min={1}
                 required
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+                className={inputClass}
               />
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-gray-300">
+            <label
+              className={`flex items-center gap-2 ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               <input
                 type="checkbox"
                 name="allowLateSubmission"
@@ -350,7 +427,13 @@ const CreateAssignmentModal = ({classId, onClose, onSuccess}) => {
             </label>
             {formData.allowLateSubmission && (
               <div className="flex items-center gap-2">
-                <span className="text-gray-300 text-sm">Penalty:</span>
+                <span
+                  className={`text-sm ${
+                    isDark ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Penalty:
+                </span>
                 <input
                   type="number"
                   name="latePenalty"
@@ -358,9 +441,19 @@ const CreateAssignmentModal = ({classId, onClose, onSuccess}) => {
                   onChange={handleChange}
                   min={0}
                   max={100}
-                  className="w-16 px-2 py-1 bg-gray-700 text-white rounded border border-gray-600"
+                  className={`w-16 px-2 py-1 rounded border ${
+                    isDark
+                      ? "bg-zinc-700 text-white border-zinc-600"
+                      : "bg-white text-gray-900 border-gray-300"
+                  }`}
                 />
-                <span className="text-gray-300 text-sm">%</span>
+                <span
+                  className={`text-sm ${
+                    isDark ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  %
+                </span>
               </div>
             )}
           </div>
@@ -369,14 +462,18 @@ const CreateAssignmentModal = ({classId, onClose, onSuccess}) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500"
+              className={`px-4 py-2 rounded transition-colors ${
+                isDark
+                  ? "bg-zinc-600 text-white hover:bg-zinc-500"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              }`}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {isSubmitting ? "Creating..." : "Create"}
             </button>
