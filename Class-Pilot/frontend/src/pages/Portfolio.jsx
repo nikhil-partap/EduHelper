@@ -2,7 +2,7 @@ import {useState, useEffect} from "react";
 import {useAuth} from "../hooks/useAuth";
 import {useTheme} from "../hooks/useTheme";
 import {LoadingSpinner, Alert} from "../components/shared";
-import {portfolioAPI, classAPI} from "../services/api";
+import {portfolioAPI, classAPI, exportAPI, downloadFile} from "../services/api";
 
 const Portfolio = () => {
   const {user} = useAuth();
@@ -14,6 +14,7 @@ const Portfolio = () => {
   const [portfolio, setPortfolio] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   // Fetch student's classes on mount
   useEffect(() => {
@@ -163,23 +164,62 @@ const Portfolio = () => {
     >
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-6">
-          <h1
-            className={`text-2xl font-semibold ${
-              isDark ? "text-foreground" : "text-gray-900"
-            }`}
-          >
-            My Portfolio
-          </h1>
-          <p
-            className={`${isDark ? "text-muted-foreground" : "text-gray-500"}`}
-          >
-            Comprehensive view of your academic performance and progress
-          </p>
+        <div className="mb-6 flex justify-between items-start">
+          <div>
+            <h1
+              className={`text-2xl font-semibold ${
+                isDark ? "text-foreground" : "text-gray-900"
+              }`}
+            >
+              My Portfolio
+            </h1>
+            <p
+              className={`${
+                isDark ? "text-muted-foreground" : "text-gray-500"
+              }`}
+            >
+              Comprehensive view of your academic performance and progress
+            </p>
+          </div>
+          {portfolio && selectedClassId && (
+            <button
+              onClick={async () => {
+                try {
+                  const response = await exportAPI.downloadPortfolioPDF(
+                    user._id,
+                    selectedClassId
+                  );
+                  const selectedClass = classes.find(
+                    (c) => c._id === selectedClassId
+                  );
+                  downloadFile(
+                    response.data,
+                    `portfolio_${selectedClass?.className || "report"}.pdf`
+                  );
+                  setSuccess("Portfolio downloaded!");
+                  setTimeout(() => setSuccess(null), 2000);
+                } catch (err) {
+                  setError(
+                    err.response?.data?.error || "Failed to export portfolio"
+                  );
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
+            >
+              📥 Export PDF
+            </button>
+          )}
         </div>
 
         {error && (
           <Alert type="error" message={error} onClose={() => setError(null)} />
+        )}
+        {success && (
+          <Alert
+            type="success"
+            message={success}
+            onClose={() => setSuccess(null)}
+          />
         )}
 
         {/* Class Selector */}

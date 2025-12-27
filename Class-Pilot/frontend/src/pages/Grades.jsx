@@ -2,7 +2,7 @@ import {useState, useEffect} from "react";
 import {useClass} from "../hooks/useClass";
 import {useAuth} from "../hooks/useAuth";
 import {useTheme} from "../hooks/useTheme";
-import {quizAPI, gradeAPI} from "../services/api";
+import {quizAPI, gradeAPI, exportAPI, downloadFile} from "../services/api";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
 
@@ -18,6 +18,7 @@ const Grades = () => {
   const [gradeSummary, setGradeSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [activeTab, setActiveTab] = useState("quizzes");
 
   useEffect(() => {
@@ -107,12 +108,29 @@ const Grades = () => {
                 : "View your grades across all classes"}
             </p>
           </div>
-          {isTeacher && (
+          {isTeacher && selectedClass && (
             <button
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-colors ${
+              onClick={async () => {
+                try {
+                  const response = await exportAPI.downloadGradesExcel(
+                    selectedClass._id
+                  );
+                  downloadFile(
+                    response.data,
+                    `grades_${selectedClass.className}.xlsx`
+                  );
+                  setSuccess("Grades report downloaded!");
+                  setTimeout(() => setSuccess(null), 2000);
+                } catch (err) {
+                  setError(
+                    err.response?.data?.error || "Failed to export grades"
+                  );
+                }
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 isDark
-                  ? "border-border text-foreground hover:bg-accent"
-                  : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-green-600 text-white hover:bg-green-700"
               }`}
             >
               <span>📥</span>Export Grades
@@ -122,6 +140,13 @@ const Grades = () => {
 
         {error && (
           <Alert type="error" message={error} onClose={() => setError(null)} />
+        )}
+        {success && (
+          <Alert
+            type="success"
+            message={success}
+            onClose={() => setSuccess(null)}
+          />
         )}
 
         <div

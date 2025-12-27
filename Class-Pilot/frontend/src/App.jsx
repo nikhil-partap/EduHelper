@@ -29,6 +29,7 @@ import {
   Meetings,
 } from "./pages";
 import ClassDetails from "./pages/ClassDetails";
+import ClassRoom from "./pages/ClassRoom";
 import Attendance from "./pages/Attendance";
 import StudentAttendance from "./pages/StudentAttendance";
 import QuizGenerator from "./pages/QuizGenerator";
@@ -283,6 +284,22 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <ClassDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/classroom/:classId"
+            element={
+              <ProtectedRoute>
+                <ClassRoom />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portfolio/:studentId/:classId"
+            element={
+              <ProtectedRoute>
+                <Portfolio />
               </ProtectedRoute>
             }
           />

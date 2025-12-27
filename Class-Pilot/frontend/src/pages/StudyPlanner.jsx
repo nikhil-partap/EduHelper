@@ -4,6 +4,345 @@ import {useTheme} from "../hooks/useTheme";
 import {classAPI, studyPlannerAPI} from "../services/api";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {CSS} from "@dnd-kit/utilities";
+
+// Sortable Chapter Item Component
+const SortableChapterItem = ({
+  chapter,
+  index,
+  isDark,
+  isTeacher,
+  formatDate,
+  getChapterStatus,
+  StatusBadge,
+  onEdit,
+  onDelete,
+}) => {
+  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
+    useSortable({id: chapter._id || `chapter-${index}`});
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 1,
+  };
+
+  const {status} = getChapterStatus(chapter);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-xl border p-6 ${
+        isDark ? "bg-card border-border" : "bg-white border-gray-200"
+      } ${isDragging ? "shadow-2xl ring-2 ring-blue-500" : ""}`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {isTeacher && (
+            <div
+              {...attributes}
+              {...listeners}
+              className={`cursor-grab active:cursor-grabbing p-2 rounded-lg transition-colors ${
+                isDark ? "hover:bg-zinc-700" : "hover:bg-gray-100"
+              }`}
+              title="Drag to reorder"
+            >
+              <span className="text-xl">⋮⋮</span>
+            </div>
+          )}
+          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <span className="text-white text-xl">📖</span>
+          </div>
+          <div>
+            <h3
+              className={`font-semibold ${
+                isDark ? "text-foreground" : "text-gray-900"
+              }`}
+            >
+              Week {index + 1}
+            </h3>
+            <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+              {chapter.chapterName}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <StatusBadge status={status} />
+          {isTeacher && (
+            <>
+              <button
+                onClick={() => onEdit(index, chapter)}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDark
+                    ? "hover:bg-zinc-700 text-blue-400"
+                    : "hover:bg-gray-100 text-blue-600"
+                }`}
+                title="Edit chapter"
+              >
+                ✏️
+              </button>
+              <button
+                onClick={() => onDelete(index)}
+                className={`p-2 rounded-lg transition-colors ${
+                  isDark
+                    ? "hover:bg-zinc-700 text-red-400"
+                    : "hover:bg-gray-100 text-red-600"
+                }`}
+                title="Delete chapter"
+              >
+                🗑️
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span
+          className={`px-2 py-1 text-xs rounded-md border ${
+            isDark
+              ? "border-border text-muted-foreground"
+              : "border-gray-200 text-gray-600"
+          }`}
+        >
+          {formatDate(chapter.startDate)} - {formatDate(chapter.endDate)}
+        </span>
+        <span
+          className={`px-2 py-1 text-xs rounded-md border ${
+            isDark
+              ? "border-border text-muted-foreground"
+              : "border-gray-200 text-gray-600"
+          }`}
+        >
+          {chapter.durationDays} days
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// Edit Chapter Modal
+const EditChapterModal = ({chapter, index, isDark, onSave, onClose}) => {
+  const [formData, setFormData] = useState({
+    chapterName: chapter.chapterName || "",
+    durationDays: chapter.durationDays || 5,
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(index, formData);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div
+        className={`w-full max-w-md rounded-xl p-6 ${
+          isDark ? "bg-card border border-border" : "bg-white"
+        }`}
+      >
+        <h2
+          className={`text-lg font-semibold mb-4 ${
+            isDark ? "text-foreground" : "text-gray-900"
+          }`}
+        >
+          Edit Chapter (Week {index + 1})
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                isDark ? "text-foreground" : "text-gray-700"
+              }`}
+            >
+              Chapter Name
+            </label>
+            <input
+              type="text"
+              value={formData.chapterName}
+              onChange={(e) =>
+                setFormData({...formData, chapterName: e.target.value})
+              }
+              className={`w-full px-3 py-2 rounded-md border ${
+                isDark
+                  ? "bg-input-background border-border text-foreground"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}
+              required
+            />
+          </div>
+          <div>
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                isDark ? "text-foreground" : "text-gray-700"
+              }`}
+            >
+              Duration (days)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="30"
+              value={formData.durationDays}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  durationDays: parseInt(e.target.value) || 1,
+                })
+              }
+              className={`w-full px-3 py-2 rounded-md border ${
+                isDark
+                  ? "bg-input-background border-border text-foreground"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}
+              required
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors"
+            >
+              Save Changes
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                isDark
+                  ? "bg-secondary text-secondary-foreground hover:bg-accent"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Timeline/Gantt View Component
+const TimelineView = ({chapters, isDark, formatDate}) => {
+  if (!chapters || chapters.length === 0) return null;
+
+  const allDates = chapters.flatMap((ch) => [
+    new Date(ch.startDate),
+    new Date(ch.endDate),
+  ]);
+  const minDate = new Date(Math.min(...allDates));
+  const maxDate = new Date(Math.max(...allDates));
+  const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1;
+
+  const getBarPosition = (start, end) => {
+    const startOffset = Math.ceil(
+      (new Date(start) - minDate) / (1000 * 60 * 60 * 24)
+    );
+    const duration =
+      Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)) + 1;
+    return {
+      left: `${(startOffset / totalDays) * 100}%`,
+      width: `${(duration / totalDays) * 100}%`,
+    };
+  };
+
+  const colors = [
+    "from-blue-500 to-blue-600",
+    "from-purple-500 to-purple-600",
+    "from-green-500 to-green-600",
+    "from-orange-500 to-orange-600",
+    "from-pink-500 to-pink-600",
+    "from-cyan-500 to-cyan-600",
+  ];
+
+  return (
+    <div
+      className={`rounded-xl border p-6 mb-6 ${
+        isDark ? "bg-card border-border" : "bg-white border-gray-200"
+      }`}
+    >
+      <h2
+        className={`text-lg font-semibold mb-4 ${
+          isDark ? "text-foreground" : "text-gray-900"
+        }`}
+      >
+        📊 Timeline View
+      </h2>
+      <div className="flex justify-between text-xs text-gray-500 mb-2">
+        <span>{formatDate(minDate)}</span>
+        <span>{formatDate(maxDate)}</span>
+      </div>
+      <div className="space-y-3">
+        {chapters.map((chapter, index) => {
+          const {left, width} = getBarPosition(
+            chapter.startDate,
+            chapter.endDate
+          );
+          return (
+            <div key={index} className="relative">
+              <div
+                className={`text-xs mb-1 truncate ${
+                  isDark ? "text-muted-foreground" : "text-gray-600"
+                }`}
+              >
+                {chapter.chapterName}
+              </div>
+              <div
+                className={`h-3 rounded-full ${
+                  isDark ? "bg-zinc-800" : "bg-gray-200"
+                }`}
+              >
+                <div
+                  className={`h-full rounded-full bg-gradient-to-r ${
+                    colors[index % colors.length]
+                  } transition-all duration-300`}
+                  style={{marginLeft: left, width}}
+                  title={`${formatDate(chapter.startDate)} - ${formatDate(
+                    chapter.endDate
+                  )}`}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {chapters.slice(0, 6).map((_, index) => (
+          <div key={index} className="flex items-center gap-1">
+            <div
+              className={`w-3 h-3 rounded-full bg-gradient-to-r ${
+                colors[index % colors.length]
+              }`}
+            />
+            <span
+              className={`text-xs ${
+                isDark ? "text-muted-foreground" : "text-gray-500"
+              }`}
+            >
+              W{index + 1}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const StudyPlanner = () => {
   const {user} = useAuth();
@@ -17,14 +356,24 @@ const StudyPlanner = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [showGenerateForm, setShowGenerateForm] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [editingChapter, setEditingChapter] = useState(null);
+  const [editingYear, setEditingYear] = useState(false);
+  const currentYear = new Date().getFullYear();
   const [generateForm, setGenerateForm] = useState({
     board: "CBSE",
     className: "10th",
     subject: "Mathematics",
+    academicYear: currentYear,
   });
   const [generating, setGenerating] = useState(false);
 
   const isTeacher = user?.role === "teacher";
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {activationConstraint: {distance: 8}}),
+    useSensor(KeyboardSensor, {coordinateGetter: sortableKeyboardCoordinates})
+  );
 
   useEffect(() => {
     fetchClasses();
@@ -44,7 +393,7 @@ const StudyPlanner = () => {
       const response = isTeacher
         ? await classAPI.getTeacherClasses()
         : await classAPI.getStudentClasses();
-      setClasses(response.data.data || []);
+      setClasses(response.data.classes || []);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch classes");
     } finally {
@@ -97,6 +446,71 @@ const StudyPlanner = () => {
     }
   };
 
+  const handleDragEnd = async (event) => {
+    const {active, over} = event;
+    if (!over || active.id === over.id || !isTeacher) return;
+
+    const oldIndex = planner.chapters.findIndex(
+      (ch, i) => (ch._id || `chapter-${i}`) === active.id
+    );
+    const newIndex = planner.chapters.findIndex(
+      (ch, i) => (ch._id || `chapter-${i}`) === over.id
+    );
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newChapters = arrayMove(planner.chapters, oldIndex, newIndex);
+    setPlanner((prev) => ({...prev, chapters: newChapters}));
+
+    try {
+      const response = await studyPlannerAPI.reorderChapters(
+        selectedClassId,
+        oldIndex,
+        newIndex
+      );
+      setPlanner(response.data.planner);
+      setSuccess("Chapters reordered!");
+      setTimeout(() => setSuccess(null), 2000);
+    } catch (err) {
+      await fetchPlanner(selectedClassId);
+      setError(err.response?.data?.message || "Failed to reorder chapters");
+    }
+  };
+
+  const handleEditChapter = (index, chapter) => {
+    setEditingChapter({index, chapter});
+  };
+
+  const handleSaveChapter = async (index, data) => {
+    try {
+      const response = await studyPlannerAPI.updateChapter(
+        selectedClassId,
+        index,
+        data
+      );
+      setPlanner(response.data.planner);
+      setEditingChapter(null);
+      setSuccess("Chapter updated!");
+      setTimeout(() => setSuccess(null), 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update chapter");
+    }
+  };
+
+  const handleDeleteChapter = async (index) => {
+    if (!confirm(`Delete Week ${index + 1}? This cannot be undone.`)) return;
+    try {
+      const response = await studyPlannerAPI.deleteChapter(
+        selectedClassId,
+        index
+      );
+      setPlanner(response.data.planner);
+      setSuccess("Chapter deleted!");
+      setTimeout(() => setSuccess(null), 2000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete chapter");
+    }
+  };
+
   const handleAddHoliday = async (date) => {
     try {
       const response = await studyPlannerAPI.addHoliday(selectedClassId, date);
@@ -120,6 +534,45 @@ const StudyPlanner = () => {
       setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to add exam date");
+    }
+  };
+
+  const handleUpdateYear = async (newYear) => {
+    try {
+      const response = await studyPlannerAPI.updateAcademicYear(
+        selectedClassId,
+        newYear
+      );
+      setPlanner(response.data.planner);
+      setEditingYear(false);
+      setSuccess("Academic year updated! All dates recalculated.");
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update academic year");
+    }
+  };
+
+  const handleDeletePlanner = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this entire study planner? This action cannot be undone!"
+      )
+    )
+      return;
+    if (
+      !confirm(
+        "This will permanently delete all chapters, holidays, and exam dates. Continue?"
+      )
+    )
+      return;
+
+    try {
+      await studyPlannerAPI.deletePlanner(selectedClassId);
+      setPlanner(null);
+      setSuccess("Study planner deleted successfully");
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete study planner");
     }
   };
 
@@ -152,11 +605,7 @@ const StudyPlanner = () => {
         ? "border border-border text-foreground"
         : "border border-gray-200 text-gray-600",
     };
-    const icons = {
-      completed: "✓",
-      "in-progress": "⏱",
-      upcoming: "📅",
-    };
+    const icons = {completed: "✓", "in-progress": "⏱", upcoming: "📅"};
     return (
       <span
         className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md ${styles[status]}`}
@@ -178,6 +627,17 @@ const StudyPlanner = () => {
   return (
     <div className={`min-h-screen ${isDark ? "bg-background" : "bg-gray-50"}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Edit Modal */}
+        {editingChapter && (
+          <EditChapterModal
+            chapter={editingChapter.chapter}
+            index={editingChapter.index}
+            isDark={isDark}
+            onSave={handleSaveChapter}
+            onClose={() => setEditingChapter(null)}
+          />
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -194,19 +654,34 @@ const StudyPlanner = () => {
                 : "Your personalized study schedule"}
             </p>
           </div>
-          {isTeacher && selectedClassId && !planner && (
-            <button
-              onClick={() => setShowGenerateForm(true)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                isDark
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-gray-900 text-white hover:bg-gray-800"
-              }`}
-            >
-              <span>✨</span>
-              Generate New Plan
-            </button>
-          )}
+          <div className="flex gap-2">
+            {planner && (
+              <button
+                onClick={() => setShowTimeline(!showTimeline)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  showTimeline
+                    ? "bg-blue-600 text-white"
+                    : isDark
+                    ? "bg-secondary text-secondary-foreground hover:bg-accent"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                📊 {showTimeline ? "Hide" : "Show"} Timeline
+              </button>
+            )}
+            {isTeacher && selectedClassId && !planner && (
+              <button
+                onClick={() => setShowGenerateForm(true)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isDark
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-gray-900 text-white hover:bg-gray-800"
+                }`}
+              >
+                ✨ Generate New Plan
+              </button>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -240,7 +715,7 @@ const StudyPlanner = () => {
           </div>
           <p className={isDark ? "text-muted-foreground" : "text-gray-600"}>
             {isTeacher
-              ? "Automatically generated based on curriculum, holidays, and exam dates"
+              ? "Drag chapters to reorder, click ✏️ to edit, or 🗑️ to delete. Timeline auto-adjusts."
               : "Follow this schedule to stay on track with your coursework"}
           </p>
         </div>
@@ -270,7 +745,7 @@ const StudyPlanner = () => {
             <option value="">-- Select a class --</option>
             {classes.map((cls) => (
               <option key={cls._id} value={cls._id}>
-                {cls.name}
+                {cls.className} - {cls.subject}
               </option>
             ))}
           </select>
@@ -445,7 +920,7 @@ const StudyPlanner = () => {
             >
               {isTeacher
                 ? "Generate an AI-powered study planner for this class"
-                : "Your teacher hasn't created a study planner for this class yet"}
+                : "Your teacher hasn't created a study planner yet"}
             </p>
             {isTeacher && (
               <button
@@ -492,71 +967,61 @@ const StudyPlanner = () => {
                 >
                   Generated: {formatDate(planner.generatedAt)}
                 </span>
+                {isTeacher && (
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      isDark
+                        ? "bg-green-950 text-green-300"
+                        : "bg-green-100 text-green-800"
+                    }`}
+                  >
+                    ⋮⋮ Drag | ✏️ Edit | 🗑️ Delete
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Chapters */}
-            <div className="space-y-4">
-              {planner.chapters?.map((chapter, index) => {
-                const {status} = getChapterStatus(chapter);
-                return (
-                  <div
-                    key={index}
-                    className={`rounded-xl border p-6 ${
-                      isDark
-                        ? "bg-card border-border"
-                        : "bg-white border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                          <span className="text-white text-xl">📖</span>
-                        </div>
-                        <div>
-                          <h3
-                            className={`font-semibold ${
-                              isDark ? "text-foreground" : "text-gray-900"
-                            }`}
-                          >
-                            Week {index + 1}
-                          </h3>
-                          <p
-                            className={
-                              isDark ? "text-muted-foreground" : "text-gray-500"
-                            }
-                          >
-                            {chapter.chapterName}
-                          </p>
-                        </div>
-                      </div>
-                      <StatusBadge status={status} />
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-md border ${
-                          isDark
-                            ? "border-border text-muted-foreground"
-                            : "border-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {formatDate(chapter.startDate)} -{" "}
-                        {formatDate(chapter.endDate)}
-                      </span>
-                      <span
-                        className={`px-2 py-1 text-xs rounded-md border ${
-                          isDark
-                            ? "border-border text-muted-foreground"
-                            : "border-gray-200 text-gray-600"
-                        }`}
-                      >
-                        {chapter.durationDays} days
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Timeline View */}
+            {showTimeline && (
+              <TimelineView
+                chapters={planner.chapters}
+                isDark={isDark}
+                formatDate={formatDate}
+              />
+            )}
+
+            {/* Chapters with Drag-Drop */}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={
+                  planner.chapters?.map((ch, i) => ch._id || `chapter-${i}`) ||
+                  []
+                }
+                strategy={verticalListSortingStrategy}
+                disabled={!isTeacher}
+              >
+                <div className="space-y-4">
+                  {planner.chapters?.map((chapter, index) => (
+                    <SortableChapterItem
+                      key={chapter._id || `chapter-${index}`}
+                      chapter={chapter}
+                      index={index}
+                      isDark={isDark}
+                      isTeacher={isTeacher}
+                      formatDate={formatDate}
+                      getChapterStatus={getChapterStatus}
+                      StatusBadge={StatusBadge}
+                      onEdit={handleEditChapter}
+                      onDelete={handleDeleteChapter}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
 
             {/* Holidays & Exams */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

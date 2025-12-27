@@ -14,6 +14,9 @@ import gradeRoutes from "./routes/grade.js";
 import timetableRoutes from "./routes/timetable.js";
 import meetingRoutes from "./routes/meeting.js";
 import portfolioRoutes from "./routes/portfolio.js";
+import announcementRoutes from "./routes/announcement.js";
+import classworkRoutes from "./routes/classwork.js";
+import exportRoutes from "./routes/export.js";
 
 // Load environment variables
 dotenv.config();
@@ -76,6 +79,9 @@ app.use("/api/grade", gradeRoutes);
 app.use("/api/timetable", timetableRoutes);
 app.use("/api/meeting", meetingRoutes);
 app.use("/api/portfolio", portfolioRoutes);
+app.use("/api/announcement", announcementRoutes);
+app.use("/api/classwork", classworkRoutes);
+app.use("/api/export", exportRoutes);
 
 // --- Error Handling ---
 

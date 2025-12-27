@@ -80,6 +80,9 @@ export const quizAPI = {
 export const studyPlannerAPI = {
   // Teacher endpoints
   generatePlanner: (data) => api.post("/api/studyplanner/generate", data),
+  deletePlanner: (classId) => api.delete(`/api/studyplanner/${classId}`),
+  updateAcademicYear: (classId, year) =>
+    api.put(`/api/studyplanner/${classId}/year`, {year}),
 
   // Shared endpoints
   getPlanner: (classId) => api.get(`/api/studyplanner/${classId}`),
@@ -87,6 +90,10 @@ export const studyPlannerAPI = {
   // Teacher-only chapter/holiday/exam management
   updateChapter: (classId, chapterIndex, data) =>
     api.put(`/api/studyplanner/${classId}/chapter/${chapterIndex}`, data),
+  deleteChapter: (classId, chapterIndex) =>
+    api.delete(`/api/studyplanner/${classId}/chapter/${chapterIndex}`),
+  reorderChapters: (classId, oldIndex, newIndex) =>
+    api.put(`/api/studyplanner/${classId}/reorder`, {oldIndex, newIndex}),
   addHoliday: (classId, date) =>
     api.post(`/api/studyplanner/${classId}/holiday`, {date}),
   removeHoliday: (classId, date) =>
@@ -192,3 +199,79 @@ export const portfolioAPI = {
 };
 
 export default api;
+
+// Announcement API calls (Stream)
+export const announcementAPI = {
+  // Teacher endpoints
+  postAnnouncement: (data) => api.post("/api/announcement/post", data),
+  deleteAnnouncement: (announcementId) =>
+    api.delete(`/api/announcement/${announcementId}`),
+  togglePin: (announcementId) =>
+    api.put(`/api/announcement/${announcementId}/pin`),
+
+  // Shared endpoints
+  getClassStream: (classId, options = {}) => {
+    const params = new URLSearchParams();
+    if (options.type) params.append("type", options.type);
+    if (options.page) params.append("page", options.page);
+    if (options.limit) params.append("limit", options.limit);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return api.get(`/api/announcement/class/${classId}${query}`);
+  },
+  addComment: (announcementId, content) =>
+    api.post(`/api/announcement/${announcementId}/comment`, {content}),
+};
+
+// Classwork API calls
+export const classworkAPI = {
+  // Teacher endpoints
+  createSection: (data) => api.post("/api/classwork/section", data),
+  updateSection: (sectionId, data) =>
+    api.put(`/api/classwork/section/${sectionId}`, data),
+  deleteSection: (sectionId) =>
+    api.delete(`/api/classwork/section/${sectionId}`),
+  addItemToSection: (sectionId, data) =>
+    api.post(`/api/classwork/section/${sectionId}/item`, data),
+  removeItemFromSection: (sectionId, itemId) =>
+    api.delete(`/api/classwork/section/${sectionId}/item/${itemId}`),
+
+  // Shared endpoints
+  getClasswork: (classId) => api.get(`/api/classwork/class/${classId}`),
+  getClassPeople: (classId) =>
+    api.get(`/api/classwork/class/${classId}/people`),
+};
+
+// Export API calls
+export const exportAPI = {
+  // Download portfolio PDF
+  downloadPortfolioPDF: (studentId, classId) =>
+    api.get(`/api/export/portfolio/${studentId}/${classId}`, {
+      responseType: "blob",
+    }),
+
+  // Download attendance Excel
+  downloadAttendanceExcel: (classId) =>
+    api.get(`/api/export/attendance/${classId}`, {responseType: "blob"}),
+
+  // Download grades Excel
+  downloadGradesExcel: (classId) =>
+    api.get(`/api/export/grades/${classId}`, {responseType: "blob"}),
+
+  // Download quiz results
+  downloadQuizResults: (quizId, format = "excel") =>
+    api.get(`/api/export/quiz/${quizId}?format=${format}`, {
+      responseType: "blob",
+    }),
+};
+
+// Helper to trigger file download from blob
+export const downloadFile = (blob, filename) => {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};

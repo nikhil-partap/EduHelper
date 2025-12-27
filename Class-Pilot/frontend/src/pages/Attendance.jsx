@@ -1,7 +1,7 @@
 import {useState, useEffect} from "react";
 import {useClass} from "../hooks/useClass";
 import {useAuth} from "../hooks/useAuth";
-import {attendanceAPI} from "../services/api";
+import {attendanceAPI, exportAPI, downloadFile} from "../services/api";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
 
@@ -124,7 +124,7 @@ const Attendance = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Attendance Management</h1>
+        <h1 className="text-3xl font-bold ">Attendance Management</h1>
         <p className="mt-2 text-gray-400">
           Track and manage student attendance for your classes
         </p>
@@ -275,9 +275,35 @@ const Attendance = () => {
               {/* Attendance Statistics */}
               {stats.length > 0 && (
                 <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">
-                    Attendance Statistics
-                  </h2>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-white">
+                      Attendance Statistics
+                    </h2>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response =
+                            await exportAPI.downloadAttendanceExcel(
+                              selectedClass._id
+                            );
+                          downloadFile(
+                            response.data,
+                            `attendance_${selectedClass.className}.xlsx`
+                          );
+                          setSuccess("Attendance report downloaded!");
+                          setTimeout(() => setSuccess(null), 2000);
+                        } catch (err) {
+                          setError(
+                            err.response?.data?.error ||
+                              "Failed to export attendance"
+                          );
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
+                    >
+                      📥 Export Excel
+                    </button>
+                  </div>
 
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-zinc-800">

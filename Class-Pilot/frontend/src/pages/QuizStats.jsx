@@ -1,7 +1,7 @@
 import {useState, useEffect} from "react";
 import {useParams, useNavigate} from "react-router-dom";
 import {useTheme} from "../hooks/useTheme";
-import {quizAPI} from "../services/api";
+import {quizAPI, exportAPI, downloadFile} from "../services/api";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
 import Alert from "../components/shared/Alert";
 
@@ -15,6 +15,7 @@ const QuizStats = () => {
   const [classAverage, setClassAverage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -96,16 +97,51 @@ const QuizStats = () => {
           >
             ← Back to Quizzes
           </button>
-          <h1
-            className={`text-2xl font-semibold ${
-              isDark ? "text-foreground" : "text-gray-900"
-            }`}
-          >
-            {quiz?.topic}
-          </h1>
-          <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
-            {quiz?.chapter}
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1
+                className={`text-2xl font-semibold ${
+                  isDark ? "text-foreground" : "text-gray-900"
+                }`}
+              >
+                {quiz?.topic}
+              </h1>
+              <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+                {quiz?.chapter}
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  const response = await exportAPI.downloadQuizResults(
+                    quizId,
+                    "excel"
+                  );
+                  downloadFile(
+                    response.data,
+                    `quiz_results_${quiz?.topic || quizId}.xlsx`
+                  );
+                  setSuccess("Quiz results downloaded!");
+                  setTimeout(() => setSuccess(null), 2000);
+                } catch (err) {
+                  setError(
+                    err.response?.data?.error || "Failed to export quiz results"
+                  );
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
+            >
+              📥 Export Results
+            </button>
+          </div>
+          {success && (
+            <Alert
+              type="success"
+              message={success}
+              onClose={() => setSuccess(null)}
+              className="mt-4"
+            />
+          )}
         </div>
 
         {/* Summary Cards */}

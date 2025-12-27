@@ -73,7 +73,7 @@ export const generateStudyPlanner = async (req, res, next) => {
         .json({ message: "Only teachers can generate study planners" });
     }
 
-    const { classId, board, className } = req.body;
+    const { classId, board, className, academicYear } = req.body;
     if (!classId || !board || !className) {
       return res
         .status(400)
@@ -101,8 +101,12 @@ export const generateStudyPlanner = async (req, res, next) => {
       return res.status(502).json({ message: "AI returned no chapters" });
     }
 
+    // Use provided year or current year (ensure it's not in the past)
+    const currentYear = new Date().getUTCFullYear();
+    const year =
+      academicYear && academicYear >= currentYear ? academicYear : currentYear;
+
     // Compute timeline
-    const year = new Date().getUTCFullYear();
     const { start, end } = academicYearWindow(year);
     const HOLIDAYS = new Set(); // initial empty; teacher can add later
     const bufferDays = 1; // buffer between chapters
@@ -143,6 +147,7 @@ export const generateStudyPlanner = async (req, res, next) => {
       teacherId: req.user._id,
       board,
       className,
+      academicYear: year,
       chapters: chaptersWithDates,
       holidays: [],
       examDates: [],
@@ -186,7 +191,7 @@ export const getStudyPlanner = async (req, res, next) => {
   }
 };
 
-// Update a chapter's dates or duration (teacher only) and shift subsequent chapters
+// Update a chapter's dates, duration, or name (teacher only) and shift subsequent chapters
 export const updateChapter = async (req, res, next) => {
   try {
     if (req.user.role !== "teacher") {
@@ -195,17 +200,17 @@ export const updateChapter = async (req, res, next) => {
         .json({ message: "Only teachers can update chapters" });
     }
 
-    const { classId } = req.params;
-    const { chapterIndex, newStartDate, newEndDate, durationDays } = req.body;
-    if (chapterIndex == null)
-      return res.status(400).json({ message: "chapterIndex is required" });
+    const { classId, chapterIndex } = req.params;
+    const { newStartDate, newEndDate, durationDays, chapterName } = req.body;
 
     await assertTeacherOwnsClass(req.user._id, classId);
 
     const planner = await StudyPlanner.findOne({ classId });
     if (!planner)
       return res.status(404).json({ message: "Study planner not found" });
-    if (!planner.chapters[chapterIndex])
+
+    const idx = parseInt(chapterIndex);
+    if (idx < 0 || idx >= planner.chapters.length)
       return res.status(404).json({ message: "Chapter not found" });
 
     const holidaySet = new Set(
@@ -213,7 +218,13 @@ export const updateChapter = async (req, res, next) => {
     );
 
     // Update target chapter
-    const target = planner.chapters[chapterIndex];
+    const target = planner.chapters[idx];
+
+    // Update chapter name if provided
+    if (chapterName !== undefined) {
+      target.chapterName = chapterName;
+    }
+
     if (durationDays != null) {
       target.durationDays = Math.max(1, Number(durationDays));
     }
@@ -235,7 +246,7 @@ export const updateChapter = async (req, res, next) => {
     let cursor = new Date(target.endDate);
     cursor.setUTCDate(cursor.getUTCDate() + 1);
 
-    for (let i = chapterIndex + 1; i < planner.chapters.length; i++) {
+    for (let i = idx + 1; i < planner.chapters.length; i++) {
       const ch = planner.chapters[i];
       const span = spanWorkingDays(cursor, ch.durationDays || 1, holidaySet);
       ch.startDate = span.start;
@@ -354,6 +365,267 @@ export const addExamDate = async (req, res, next) => {
   } catch (err) {
     if (err.status)
       return res.status(err.status).json({ message: err.message });
+    next(err);
+  }
+};
+
+// Reorder chapters (teacher only) - for drag-drop functionality
+export const reorderChapters = async (req, res, next) => {
+  try {
+    if (req.user.role !== "teacher") {
+      return res
+        .status(403)
+        .json({ message: "Only teachers can reorder chapters" });
+    }
+
+    const { classId } = req.params;
+    const { oldIndex, newIndex } = req.body;
+
+    if (oldIndex == null || newIndex == null) {
+      return res
+        .status(400)
+        .json({ message: "oldIndex and newIndex are required" });
+    }
+
+    await assertTeacherOwnsClass(req.user._id, classId);
+
+    const planner = await StudyPlanner.findOne({ classId });
+    if (!planner) {
+      return res.status(404).json({ message: "Study planner not found" });
+    }
+
+    if (
+      oldIndex < 0 ||
+      oldIndex >= planner.chapters.length ||
+      newIndex < 0 ||
+      newIndex >= planner.chapters.length
+    ) {
+      return res.status(400).json({ message: "Invalid chapter indices" });
+    }
+
+    // Reorder the chapters array
+    const [movedChapter] = planner.chapters.splice(oldIndex, 1);
+    planner.chapters.splice(newIndex, 0, movedChapter);
+
+    // Recalculate all dates based on new order
+    const holidaySet = new Set(
+      (planner.holidays || []).map((d) => normalizeUTC(d).getTime())
+    );
+
+    const year = new Date().getUTCFullYear();
+    const { start } = academicYearWindow(year);
+    let cursor = normalizeUTC(start);
+    const bufferDays = 1;
+
+    for (let i = 0; i < planner.chapters.length; i++) {
+      const ch = planner.chapters[i];
+
+      // Add buffer before each chapter (except first)
+      if (i > 0) {
+        for (let b = 0; b < bufferDays; ) {
+          cursor.setUTCDate(cursor.getUTCDate() + 1);
+          const c = normalizeUTC(cursor);
+          if (!isWeekend(c) && !holidaySet.has(c.getTime())) b++;
+        }
+      }
+
+      const { start: chStart, end: chEnd } = spanWorkingDays(
+        cursor,
+        ch.durationDays || 1,
+        holidaySet
+      );
+
+      ch.startDate = chStart;
+      ch.endDate = chEnd;
+
+      cursor = new Date(chEnd);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    planner.lastEditedAt = new Date();
+    await planner.save();
+
+    res.status(200).json({ planner });
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
+};
+
+// Delete a chapter (teacher only)
+export const deleteChapter = async (req, res, next) => {
+  try {
+    if (req.user.role !== "teacher") {
+      return res
+        .status(403)
+        .json({ message: "Only teachers can delete chapters" });
+    }
+
+    const { classId, chapterIndex } = req.params;
+
+    await assertTeacherOwnsClass(req.user._id, classId);
+
+    const planner = await StudyPlanner.findOne({ classId });
+    if (!planner) {
+      return res.status(404).json({ message: "Study planner not found" });
+    }
+
+    const idx = parseInt(chapterIndex);
+    if (idx < 0 || idx >= planner.chapters.length) {
+      return res.status(400).json({ message: "Invalid chapter index" });
+    }
+
+    // Remove the chapter
+    planner.chapters.splice(idx, 1);
+
+    // Recalculate dates for remaining chapters
+    if (planner.chapters.length > 0) {
+      const holidaySet = new Set(
+        (planner.holidays || []).map((d) => normalizeUTC(d).getTime())
+      );
+
+      const year = planner.academicYear || new Date().getUTCFullYear();
+      const { start } = academicYearWindow(year);
+      let cursor = normalizeUTC(start);
+      const bufferDays = 1;
+
+      for (let i = 0; i < planner.chapters.length; i++) {
+        const ch = planner.chapters[i];
+
+        if (i > 0) {
+          for (let b = 0; b < bufferDays; ) {
+            cursor.setUTCDate(cursor.getUTCDate() + 1);
+            const c = normalizeUTC(cursor);
+            if (!isWeekend(c) && !holidaySet.has(c.getTime())) b++;
+          }
+        }
+
+        const { start: chStart, end: chEnd } = spanWorkingDays(
+          cursor,
+          ch.durationDays || 1,
+          holidaySet
+        );
+
+        ch.startDate = chStart;
+        ch.endDate = chEnd;
+
+        cursor = new Date(chEnd);
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+      }
+    }
+
+    planner.lastEditedAt = new Date();
+    await planner.save();
+
+    res.status(200).json({ planner });
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
+};
+
+// Update academic year (teacher only) - recalculates all chapter dates
+export const updateAcademicYear = async (req, res, next) => {
+  try {
+    if (req.user.role !== "teacher") {
+      return res
+        .status(403)
+        .json({ message: "Only teachers can update academic year" });
+    }
+
+    const { classId } = req.params;
+    const { year } = req.body;
+
+    if (!year || year < 2020 || year > 2100) {
+      return res
+        .status(400)
+        .json({ message: "Invalid year (must be 2020-2100)" });
+    }
+
+    await assertTeacherOwnsClass(req.user._id, classId);
+
+    const planner = await StudyPlanner.findOne({ classId });
+    if (!planner) {
+      return res.status(404).json({ message: "Study planner not found" });
+    }
+
+    // Update academic year
+    planner.academicYear = year;
+
+    // Recalculate all chapter dates based on new year
+    if (planner.chapters.length > 0) {
+      const holidaySet = new Set(
+        (planner.holidays || []).map((d) => normalizeUTC(d).getTime())
+      );
+
+      const { start } = academicYearWindow(year);
+      let cursor = normalizeUTC(start);
+      const bufferDays = 1;
+
+      for (let i = 0; i < planner.chapters.length; i++) {
+        const ch = planner.chapters[i];
+
+        if (i > 0) {
+          for (let b = 0; b < bufferDays; ) {
+            cursor.setUTCDate(cursor.getUTCDate() + 1);
+            const c = normalizeUTC(cursor);
+            if (!isWeekend(c) && !holidaySet.has(c.getTime())) b++;
+          }
+        }
+
+        const { start: chStart, end: chEnd } = spanWorkingDays(
+          cursor,
+          ch.durationDays || 1,
+          holidaySet
+        );
+
+        ch.startDate = chStart;
+        ch.endDate = chEnd;
+
+        cursor = new Date(chEnd);
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+      }
+    }
+
+    planner.lastEditedAt = new Date();
+    await planner.save();
+
+    res.status(200).json({ planner });
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
+};
+
+// Delete entire study planner (teacher only)
+export const deleteStudyPlanner = async (req, res, next) => {
+  try {
+    if (req.user.role !== "teacher") {
+      return res
+        .status(403)
+        .json({ message: "Only teachers can delete study planners" });
+    }
+
+    const { classId } = req.params;
+
+    await assertTeacherOwnsClass(req.user._id, classId);
+
+    const planner = await StudyPlanner.findOneAndDelete({ classId });
+    if (!planner) {
+      return res.status(404).json({ message: "Study planner not found" });
+    }
+
+    res.status(200).json({ message: "Study planner deleted successfully" });
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
     next(err);
   }
 };
