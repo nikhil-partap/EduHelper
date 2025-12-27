@@ -1,11 +1,11 @@
 import Attendence from "../models/Attendence.js";
 import QuizAttempt from "../models/QuizAttempt.js";
-// eslint-disable-next-line no-unused-vars
 import Quiz from "../models/Quiz.js";
 import Grade from "../models/Grade.js";
 import Assignment from "../models/Assignment.js";
 import Class from "../models/Class.js";
 import User from "../models/User.js";
+import Meeting from "../models/Meeting.js";
 
 /**
  * Get comprehensive student portfolio with analytics
@@ -653,4 +653,185 @@ export const getClassAnalytics = async (req, res) => {
       .status(500)
       .json({ success: false, error: "Failed to fetch class analytics" });
   }
+};
+
+/**
+ * Get student dashboard data in a single API call
+ * @route GET /api/portfolio/dashboard
+ * @access Private (Student only)
+ */
+export const getStudentDashboard = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    // Get all enrolled classes
+    const classes = await Class.find({ students: studentId })
+      .populate("teacherId", "name")
+      .select("className subject teacherId classCode");
+
+    if (classes.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          stats: {
+            classes: 0,
+            pendingAssignments: 0,
+            overallGrade: 0,
+            attendance: 0,
+          },
+          classes: [],
+          recentActivity: [],
+          upcomingMeetings: [],
+        },
+      });
+    }
+
+    const classIds = classes.map((c) => c._id);
+
+    // Fetch all data in parallel for efficiency
+    const [attendanceRecords, quizAttempts, grades, assignments, meetings] =
+      await Promise.all([
+        Attendence.find({ studentId, classId: { $in: classIds } }),
+        QuizAttempt.find({ studentId, classId: { $in: classIds } })
+          .populate("quizId", "topic")
+          .sort({ attemptedAt: -1 })
+          .limit(5),
+        Grade.find({ studentId, classId: { $in: classIds } }),
+        Assignment.find({ classId: { $in: classIds } }),
+        Meeting.find({
+          classId: { $in: classIds },
+          scheduledAt: { $gte: new Date() },
+          status: { $in: ["scheduled", "ongoing"] },
+        })
+          .sort({ scheduledAt: 1 })
+          .limit(3),
+      ]);
+
+    // Calculate attendance percentage
+    const totalAttendance = attendanceRecords.length;
+    const presentCount = attendanceRecords.filter(
+      (r) => r.status === "Present" || r.status === "Late"
+    ).length;
+    const attendancePercentage =
+      totalAttendance > 0
+        ? Math.round((presentCount / totalAttendance) * 100)
+        : 0;
+
+    // Calculate overall grade
+    const gradePercentages = grades.map((g) =>
+      Math.round((g.score / g.maxScore) * 100)
+    );
+    const overallGrade =
+      gradePercentages.length > 0
+        ? Math.round(
+            gradePercentages.reduce((a, b) => a + b, 0) /
+              gradePercentages.length
+          )
+        : 0;
+
+    // Count pending assignments
+    const now = new Date();
+    let pendingAssignments = 0;
+    assignments.forEach((a) => {
+      const hasSubmitted = a.submissions?.some(
+        (s) => s.studentId?.toString() === studentId.toString()
+      );
+      if (!hasSubmitted && new Date(a.dueDate) >= now) {
+        pendingAssignments++;
+      }
+    });
+
+    // Build recent activity from quiz attempts and assignments
+    const recentActivity = [];
+
+    quizAttempts.forEach((attempt) => {
+      recentActivity.push({
+        type: "quiz",
+        title: `Completed: ${attempt.quizId?.topic || "Quiz"}`,
+        subtitle: `Score: ${attempt.percentage}%`,
+        time: attempt.attemptedAt,
+        icon: "📝",
+      });
+    });
+
+    // Add recent assignment submissions
+    assignments.forEach((a) => {
+      const submission = a.submissions?.find(
+        (s) => s.studentId?.toString() === studentId.toString()
+      );
+      if (submission) {
+        recentActivity.push({
+          type: "assignment",
+          title: `Submitted: ${a.title}`,
+          subtitle: submission.grade
+            ? `Grade: ${submission.grade}`
+            : "Pending review",
+          time: submission.submittedAt,
+          icon: "📋",
+        });
+      }
+    });
+
+    // Sort by time and limit
+    recentActivity.sort((a, b) => new Date(b.time) - new Date(a.time));
+    const limitedActivity = recentActivity.slice(0, 5).map((a) => ({
+      ...a,
+      time: formatTimeAgo(a.time),
+    }));
+
+    // Format classes for display
+    const formattedClasses = classes.slice(0, 3).map((c) => ({
+      id: c._id,
+      name: c.className,
+      subject: c.subject,
+      teacher: c.teacherId?.name || "Unknown",
+      code: c.classCode,
+    }));
+
+    // Format upcoming meetings
+    const formattedMeetings = meetings.map((m) => ({
+      id: m._id,
+      title: m.title,
+      scheduledAt: m.scheduledAt,
+      link: m.meetingLink,
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        stats: {
+          classes: classes.length,
+          pendingAssignments,
+          overallGrade,
+          attendance: attendancePercentage,
+        },
+        classes: formattedClasses,
+        recentActivity: limitedActivity,
+        upcomingMeetings: formattedMeetings,
+      },
+    });
+  } catch (error) {
+    console.error("Student dashboard error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch dashboard data",
+    });
+  }
+};
+
+/**
+ * Format time ago helper
+ */
+const formatTimeAgo = (date) => {
+  const now = new Date();
+  const diff = now - new Date(date);
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  if (days < 7) return `${days} day${days > 1 ? "s" : ""} ago`;
+  return new Date(date).toLocaleDateString();
 };

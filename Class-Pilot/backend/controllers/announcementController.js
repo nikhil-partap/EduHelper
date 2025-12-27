@@ -1,0 +1,273 @@
+import Announcement from "../models/Announcement.js";
+import Class from "../models/Class.js";
+
+/**
+ * @desc    Post a new announcement
+ * @route   POST /api/announcement/post
+ * @access  Private (Teacher only)
+ */
+export const postAnnouncement = async (req, res) => {
+  try {
+    const {
+      classId,
+      type,
+      title,
+      content,
+      referenceId,
+      referenceModel,
+      attachments,
+    } = req.body;
+
+    if (!classId || !content) {
+      return res.status(400).json({
+        success: false,
+        error: "Class ID and content are required",
+      });
+    }
+
+    // Verify class exists and teacher owns it
+    const classData = await Class.findById(classId);
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        error: "Class not found",
+      });
+    }
+
+    if (classData.teacherId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized to post in this class",
+      });
+    }
+
+    const announcement = await Announcement.create({
+      classId,
+      teacherId: req.user.id,
+      type: type || "announcement",
+      title,
+      content,
+      referenceId,
+      referenceModel,
+      attachments,
+    });
+
+    await announcement.populate("teacherId", "name email");
+
+    res.status(201).json({
+      success: true,
+      data: announcement,
+    });
+  } catch (error) {
+    console.error("Post announcement error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to post announcement",
+    });
+  }
+};
+
+/**
+ * @desc    Get class stream (all announcements)
+ * @route   GET /api/announcement/class/:classId
+ * @access  Private (Teacher or enrolled student)
+ */
+export const getClassStream = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { type, limit = 20, page = 1 } = req.query;
+
+    // Verify access
+    const classData = await Class.findById(classId);
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        error: "Class not found",
+      });
+    }
+
+    const isTeacher = classData.teacherId.toString() === req.user.id;
+    const isStudent = classData.students.some(
+      (s) => s.toString() === req.user.id
+    );
+
+    if (!isTeacher && !isStudent) {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized to view this class stream",
+      });
+    }
+
+    // Build query
+    const query = { classId };
+    if (type) {
+      query.type = type;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [announcements, total] = await Promise.all([
+      Announcement.find(query)
+        .populate("teacherId", "name email")
+        .populate("comments.userId", "name email role")
+        .sort({ isPinned: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Announcement.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: announcements.length,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit)),
+      data: announcements,
+    });
+  } catch (error) {
+    console.error("Get stream error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch class stream",
+    });
+  }
+};
+
+/**
+ * @desc    Add comment to announcement
+ * @route   POST /api/announcement/:announcementId/comment
+ * @access  Private (Teacher or enrolled student)
+ */
+export const addComment = async (req, res) => {
+  try {
+    const { announcementId } = req.params;
+    const { content } = req.body;
+
+    if (!content) {
+      return res.status(400).json({
+        success: false,
+        error: "Comment content is required",
+      });
+    }
+
+    const announcement = await Announcement.findById(announcementId);
+    if (!announcement) {
+      return res.status(404).json({
+        success: false,
+        error: "Announcement not found",
+      });
+    }
+
+    // Verify access
+    const classData = await Class.findById(announcement.classId);
+    const isTeacher = classData.teacherId.toString() === req.user.id;
+    const isStudent = classData.students.some(
+      (s) => s.toString() === req.user.id
+    );
+
+    if (!isTeacher && !isStudent) {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized to comment",
+      });
+    }
+
+    announcement.comments.push({
+      userId: req.user.id,
+      content,
+    });
+
+    await announcement.save();
+    await announcement.populate("comments.userId", "name email role");
+
+    res.status(200).json({
+      success: true,
+      data: announcement,
+    });
+  } catch (error) {
+    console.error("Add comment error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to add comment",
+    });
+  }
+};
+
+/**
+ * @desc    Delete announcement
+ * @route   DELETE /api/announcement/:announcementId
+ * @access  Private (Teacher only)
+ */
+export const deleteAnnouncement = async (req, res) => {
+  try {
+    const { announcementId } = req.params;
+
+    const announcement = await Announcement.findById(announcementId);
+    if (!announcement) {
+      return res.status(404).json({
+        success: false,
+        error: "Announcement not found",
+      });
+    }
+
+    if (announcement.teacherId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized to delete this announcement",
+      });
+    }
+
+    await announcement.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      data: {},
+    });
+  } catch (error) {
+    console.error("Delete announcement error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete announcement",
+    });
+  }
+};
+
+/**
+ * @desc    Toggle pin announcement
+ * @route   PUT /api/announcement/:announcementId/pin
+ * @access  Private (Teacher only)
+ */
+export const togglePinAnnouncement = async (req, res) => {
+  try {
+    const { announcementId } = req.params;
+
+    const announcement = await Announcement.findById(announcementId);
+    if (!announcement) {
+      return res.status(404).json({
+        success: false,
+        error: "Announcement not found",
+      });
+    }
+
+    if (announcement.teacherId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized",
+      });
+    }
+
+    announcement.isPinned = !announcement.isPinned;
+    await announcement.save();
+
+    res.status(200).json({
+      success: true,
+      data: announcement,
+    });
+  } catch (error) {
+    console.error("Toggle pin error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to toggle pin",
+    });
+  }
+};

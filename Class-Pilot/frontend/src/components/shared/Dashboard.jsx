@@ -2,7 +2,13 @@ import {useState, useEffect} from "react";
 import {useAuth} from "../../hooks/useAuth";
 import {useTheme} from "../../hooks/useTheme";
 import {useNavigate} from "react-router-dom";
-import {classAPI, quizAPI, assignmentAPI, meetingAPI} from "../../services/api";
+import {
+  classAPI,
+  quizAPI,
+  assignmentAPI,
+  meetingAPI,
+  portfolioAPI,
+} from "../../services/api";
 
 const Dashboard = () => {
   const {user} = useAuth();
@@ -15,29 +21,57 @@ const Dashboard = () => {
     quizzes: 0,
     assignments: 0,
     meetings: 0,
+    overallGrade: 0,
+    attendance: 0,
   });
+  const [classes, setClasses] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const isTeacher = user?.role === "teacher";
+
   useEffect(() => {
-    fetchDashboardData();
+    if (isTeacher) {
+      fetchTeacherDashboard();
+    } else {
+      fetchStudentDashboard();
+    }
   }, [user]);
 
-  const fetchDashboardData = async () => {
+  // Single API call for student dashboard
+  const fetchStudentDashboard = async () => {
     try {
-      const isTeacher = user?.role === "teacher";
-      const classResponse = isTeacher
-        ? await classAPI.getTeacherClasses()
-        : await classAPI.getStudentClasses();
+      const response = await portfolioAPI.getStudentDashboard();
+      const data = response.data.data;
 
-      const classes = classResponse.data.data || [];
+      setStats({
+        classes: data.stats.classes,
+        assignments: data.stats.pendingAssignments,
+        overallGrade: data.stats.overallGrade,
+        attendance: data.stats.attendance,
+      });
+      setClasses(data.classes);
+      setRecentActivity(data.recentActivity);
+    } catch {
+      // Keep default stats on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Teacher dashboard - multiple API calls (can be optimized later)
+  const fetchTeacherDashboard = async () => {
+    try {
+      const classResponse = await classAPI.getTeacherClasses();
+      const classesData = classResponse.data.data || [];
+
       let quizCount = 0;
       let assignmentCount = 0;
       let meetingCount = 0;
       const activities = [];
 
-      if (classes.length > 0) {
-        const classId = classes[0]._id;
+      if (classesData.length > 0) {
+        const classId = classesData[0]._id;
         try {
           const [quizRes, assignRes, meetRes] = await Promise.all([
             quizAPI.getClassQuizzes(classId),
@@ -81,11 +115,20 @@ const Dashboard = () => {
       }
 
       setStats({
-        classes: classes.length,
+        classes: classesData.length,
         quizzes: quizCount,
         assignments: assignmentCount,
         meetings: meetingCount,
       });
+      setClasses(
+        classesData.slice(0, 3).map((c) => ({
+          id: c._id,
+          name: c.className,
+          subject: c.subject,
+          studentCount: c.students?.length || 0,
+          code: c.joinCode,
+        }))
+      );
       setRecentActivity(activities);
     } catch {
       // Keep default stats
@@ -93,8 +136,6 @@ const Dashboard = () => {
       setIsLoading(false);
     }
   };
-
-  const isTeacher = user?.role === "teacher";
 
   // Stat Card Component - Clean design from Figma
   const StatCard = ({icon, value, label, trend, onClick}) => (
@@ -376,7 +417,11 @@ const Dashboard = () => {
           />
           <StatCard
             icon={isTeacher ? "👥" : "🏆"}
-            value={isTeacher ? stats.classes * 15 : "87.5%"}
+            value={
+              isTeacher
+                ? classes.reduce((sum, c) => sum + (c.studentCount || 0), 0)
+                : `${stats.overallGrade}%`
+            }
             label={isTeacher ? "Total Students" : "Overall Grade"}
             trend={
               isTeacher
@@ -393,7 +438,7 @@ const Dashboard = () => {
           />
           <StatCard
             icon={isTeacher ? "📋" : "📅"}
-            value={isTeacher ? stats.assignments : "92%"}
+            value={isTeacher ? stats.assignments : `${stats.attendance}%`}
             label={isTeacher ? "Pending Submissions" : "Attendance"}
             onClick={() =>
               navigate(isTeacher ? "/assignments" : "/my-attendance")
@@ -452,27 +497,20 @@ const Dashboard = () => {
                     }`}
                   />
                 ))
-              ) : stats.classes > 0 ? (
-                <>
+              ) : classes.length > 0 ? (
+                classes.map((cls) => (
                   <ClassItem
-                    name="Mathematics 101"
-                    subtitle={isTeacher ? "32 students" : "Prof. John Doe"}
-                    badge={isTeacher ? "MATH101" : "Active"}
-                    onClick={() => navigate("/classes")}
+                    key={cls.id}
+                    name={cls.name}
+                    subtitle={
+                      isTeacher
+                        ? `${cls.studentCount} students`
+                        : cls.teacher || cls.subject
+                    }
+                    badge={isTeacher ? cls.code : "Active"}
+                    onClick={() => navigate(`/classes/${cls.id}`)}
                   />
-                  <ClassItem
-                    name="Physics Advanced"
-                    subtitle={isTeacher ? "28 students" : "Prof. Jane Smith"}
-                    badge={isTeacher ? "PHY201" : "Active"}
-                    onClick={() => navigate("/classes")}
-                  />
-                  <ClassItem
-                    name="Chemistry Basics"
-                    subtitle={isTeacher ? "35 students" : "Prof. Bob Wilson"}
-                    badge={isTeacher ? "CHEM101" : "Active"}
-                    onClick={() => navigate("/classes")}
-                  />
-                </>
+                ))
               ) : (
                 <div
                   className={`text-center py-8 ${
@@ -515,32 +553,18 @@ const Dashboard = () => {
                     key={idx}
                     icon={activity.icon}
                     text={activity.title}
-                    time={activity.time}
+                    time={activity.subtitle || activity.time}
                   />
                 ))
               ) : (
-                <>
-                  <ActivityItem
-                    icon="📝"
-                    text="New quiz submission from Alice Johnson"
-                    time="5 min ago"
-                  />
-                  <ActivityItem
-                    icon="📋"
-                    text="Bob Smith submitted assignment"
-                    time="15 min ago"
-                  />
-                  <ActivityItem
-                    icon="👤"
-                    text="Carol Williams joined Mathematics 101"
-                    time="1 hour ago"
-                  />
-                  <ActivityItem
-                    icon="✅"
-                    text="Attendance marked for Physics Advanced"
-                    time="2 hours ago"
-                  />
-                </>
+                <div
+                  className={`text-center py-8 ${
+                    isDark ? "text-muted-foreground" : "text-gray-500"
+                  }`}
+                >
+                  <p className="text-3xl mb-2">📋</p>
+                  <p className="text-sm">No recent activity</p>
+                </div>
               )}
             </div>
           </div>

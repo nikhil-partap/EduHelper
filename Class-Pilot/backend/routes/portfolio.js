@@ -1,11 +1,16 @@
 import express from "express";
-import { protect } from "../middleware/auth.js";
+import { protect, authorize } from "../middleware/auth.js";
 import {
   getStudentPortfolio,
   getClassAnalytics,
+  getStudentDashboard,
 } from "../controllers/portfolioController.js";
 
 const router = express.Router();
+
+// Get student dashboard data (single API call)
+// GET /api/portfolio/dashboard
+router.get("/dashboard", protect, authorize("student"), getStudentDashboard);
 
 // Get student portfolio with analytics
 // GET /api/portfolio/:studentId/:classId

@@ -2,7 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { generateQuizQuestions, testAIConnection } from "./utils/aiService.js";
+import { generateQuizQuestions, testAIConnection } from "../utils/aiService.js";
 
 async function testAI() {
   console.log("🧪 Testing Gemini AI Connection...\n");
