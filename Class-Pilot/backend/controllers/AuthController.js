@@ -90,13 +90,18 @@ export const loginUser = async (req, res, next) => {
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({
+        message:
+          "Invalid email or password(the Email is not found in the database )",
+      });
     }
 
     // Compare passwords (using  bcrypt.compare internally)
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({
+        message: "Invalid email or password(the password is incorrect)",
+      });
     }
 
     // Issue JWT
