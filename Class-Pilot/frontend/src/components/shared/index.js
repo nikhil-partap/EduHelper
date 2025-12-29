@@ -7,3 +7,4 @@ export {default as LoadingSpinner} from "./LoadingSpinner";
 export {default as Navigation} from "./Navigation";
 export {default as NotFound} from "./NotFound";
 export {default as ConnectionTest} from "./ConnectionTest";
+export {default as Sidebar} from "./Sidebar";

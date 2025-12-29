@@ -271,3 +271,54 @@ export const togglePinAnnouncement = async (req, res) => {
     });
   }
 };
+
+/**
+ * @desc    Get recent announcements across all user's classes
+ * @route   GET /api/announcement/recent
+ * @access  Private
+ */
+export const getRecentAnnouncements = async (req, res) => {
+  try {
+    const { limit = 5 } = req.query;
+    const userId = req.user.id;
+    const isTeacher = req.user.role === "teacher";
+
+    // Get user's classes
+    let classIds = [];
+    if (isTeacher) {
+      const classes = await Class.find({ teacherId: userId }).select("_id");
+      classIds = classes.map((c) => c._id);
+    } else {
+      const classes = await Class.find({ students: userId }).select("_id");
+      classIds = classes.map((c) => c._id);
+    }
+
+    if (classIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
+    // Get recent announcements from all classes
+    const announcements = await Announcement.find({
+      classId: { $in: classIds },
+    })
+      .populate("teacherId", "name email")
+      .populate("classId", "className subject")
+      .sort({ isPinned: -1, createdAt: -1 })
+      .limit(parseInt(limit));
+
+    res.status(200).json({
+      success: true,
+      count: announcements.length,
+      data: announcements,
+    });
+  } catch (error) {
+    console.error("Get recent announcements error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch announcements",
+    });
+  }
+};

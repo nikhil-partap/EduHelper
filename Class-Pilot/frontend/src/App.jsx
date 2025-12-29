@@ -3,6 +3,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import {AuthProvider} from "./context/AuthProvider";
 import {ClassProvider} from "./context/ClassProvider";
@@ -14,7 +15,7 @@ import {
   Dashboard,
   LoadingSpinner,
   NotFound,
-  Navigation,
+  Sidebar,
   Footer,
 } from "./components/shared";
 import {
@@ -94,224 +95,236 @@ const AttendancePage = () => {
 
 const AppContent = () => {
   const {theme} = useTheme();
+  const {isAuthenticated} = useAuth();
+  const location = useLocation();
+
+  // Check if we're on auth pages
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/register";
 
   return (
     <div
-      className={`min-h-screen flex flex-col transition-colors duration-300 ${
+      className={`min-h-screen transition-colors duration-300 ${
         theme === "dark" ? "bg-black text-white" : "bg-gray-50 text-gray-900"
       }`}
     >
-      <Navigation />
-      <main className="flex-1">
-        <Routes>
-          {/* Public Routes */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            }
-          />
+      <Sidebar />
+      <div
+        className={`flex flex-col min-h-screen transition-all duration-300 ${
+          isAuthenticated && !isAuthPage ? "lg:ml-64" : ""
+        }`}
+      >
+        <main className="flex-1">
+          <Routes>
+            {/* Public Routes */}
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
+            />
 
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/classes"
-            element={
-              <ProtectedRoute>
-                <ClassesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/students"
-            element={
-              <ProtectedRoute>
-                <ComingSoon
-                  title="Students Management"
-                  description="View and manage all your students across classes"
-                  icon="👥"
-                />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/assignments"
-            element={
-              <ProtectedRoute>
-                <Assignments />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/assignment/:assignmentId"
-            element={
-              <ProtectedRoute>
-                <AssignmentDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/attendance"
-            element={
-              <ProtectedRoute>
-                <AttendancePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/my-attendance"
-            element={
-              <ProtectedRoute>
-                <StudentAttendance />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/quizzes"
-            element={
-              <ProtectedRoute>
-                <Quizzes />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/quiz/generate"
-            element={
-              <ProtectedRoute>
-                <QuizGenerator />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/quiz/:quizId/stats"
-            element={
-              <ProtectedRoute>
-                <QuizStats />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/quiz/:quizId/take"
-            element={
-              <ProtectedRoute>
-                <TakeQuiz />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/quiz/:quizId"
-            element={
-              <ProtectedRoute>
-                <TakeQuiz />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/study-planner"
-            element={
-              <ProtectedRoute>
-                <StudyPlanner />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <ProtectedRoute>
-                <StudentReports />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/portfolio"
-            element={
-              <ProtectedRoute>
-                <Portfolio />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/grades"
-            element={
-              <ProtectedRoute>
-                <Grades />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/schedule"
-            element={
-              <ProtectedRoute>
-                <Schedule />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/timetable"
-            element={
-              <ProtectedRoute>
-                <Timetable />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/meetings"
-            element={
-              <ProtectedRoute>
-                <Meetings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/class/:id"
-            element={
-              <ProtectedRoute>
-                <ClassDetails />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/classroom/:classId"
-            element={
-              <ProtectedRoute>
-                <ClassRoom />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/portfolio/:studentId/:classId"
-            element={
-              <ProtectedRoute>
-                <Portfolio />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/classes"
+              element={
+                <ProtectedRoute>
+                  <ClassesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/students"
+              element={
+                <ProtectedRoute>
+                  <ComingSoon
+                    title="Students Management"
+                    description="View and manage all your students across classes"
+                    icon="👥"
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assignments"
+              element={
+                <ProtectedRoute>
+                  <Assignments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assignment/:assignmentId"
+              element={
+                <ProtectedRoute>
+                  <AssignmentDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance"
+              element={
+                <ProtectedRoute>
+                  <AttendancePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-attendance"
+              element={
+                <ProtectedRoute>
+                  <StudentAttendance />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quizzes"
+              element={
+                <ProtectedRoute>
+                  <Quizzes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quiz/generate"
+              element={
+                <ProtectedRoute>
+                  <QuizGenerator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quiz/:quizId/stats"
+              element={
+                <ProtectedRoute>
+                  <QuizStats />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quiz/:quizId/take"
+              element={
+                <ProtectedRoute>
+                  <TakeQuiz />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quiz/:quizId"
+              element={
+                <ProtectedRoute>
+                  <TakeQuiz />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/study-planner"
+              element={
+                <ProtectedRoute>
+                  <StudyPlanner />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <StudentReports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portfolio"
+              element={
+                <ProtectedRoute>
+                  <Portfolio />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grades"
+              element={
+                <ProtectedRoute>
+                  <Grades />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/schedule"
+              element={
+                <ProtectedRoute>
+                  <Schedule />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/timetable"
+              element={
+                <ProtectedRoute>
+                  <Timetable />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/meetings"
+              element={
+                <ProtectedRoute>
+                  <Meetings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/class/:id"
+              element={
+                <ProtectedRoute>
+                  <ClassDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/classroom/:classId"
+              element={
+                <ProtectedRoute>
+                  <ClassRoom />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/portfolio/:studentId/:classId"
+              element={
+                <ProtectedRoute>
+                  <Portfolio />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-          {/* 404 Page */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </main>
-      <Footer />
+            {/* 404 Page */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 };

@@ -212,6 +212,8 @@ export const announcementAPI = {
     api.put(`/api/announcement/${announcementId}/pin`),
 
   // Shared endpoints
+  getRecentAnnouncements: (limit = 5) =>
+    api.get(`/api/announcement/recent?limit=${limit}`),
   getClassStream: (classId, options = {}) => {
     const params = new URLSearchParams();
     if (options.type) params.append("type", options.type);

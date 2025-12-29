@@ -33,6 +33,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://localhost:3000",
+      "http://192.168.136.145:5173/",
       /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/, // Allow local network IPs
     ],
     credentials: true,

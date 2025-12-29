@@ -8,6 +8,8 @@ import {
   assignmentAPI,
   meetingAPI,
   portfolioAPI,
+  announcementAPI,
+  classworkAPI,
 } from "../../services/api";
 
 const Dashboard = () => {
@@ -26,6 +28,10 @@ const Dashboard = () => {
   });
   const [classes, setClasses] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [classworkData, setClassworkData] = useState([]);
+  const [peopleData, setPeopleData] = useState([]);
+  const [dashboardTab, setDashboardTab] = useState("stream");
   const [isLoading, setIsLoading] = useState(true);
 
   const isTeacher = user?.role === "teacher";
@@ -41,8 +47,11 @@ const Dashboard = () => {
   // Single API call for student dashboard
   const fetchStudentDashboard = async () => {
     try {
-      const response = await portfolioAPI.getStudentDashboard();
-      const data = response.data.data;
+      const [dashboardRes, announcementsRes] = await Promise.all([
+        portfolioAPI.getStudentDashboard(),
+        announcementAPI.getRecentAnnouncements(5),
+      ]);
+      const data = dashboardRes.data.data;
 
       setStats({
         classes: data.stats.classes,
@@ -52,6 +61,46 @@ const Dashboard = () => {
       });
       setClasses(data.classes);
       setRecentActivity(data.recentActivity);
+      setAnnouncements(announcementsRes.data.data || []);
+
+      // Fetch classwork and people from first class if available
+      if (data.classes?.length > 0) {
+        try {
+          const [classworkRes, peopleRes] = await Promise.all([
+            classworkAPI.getClasswork(data.classes[0].id),
+            classworkAPI.getClassPeople(data.classes[0].id),
+          ]);
+
+          // Extract items from classwork sections
+          const items = [];
+          classworkRes.data.data?.sections?.forEach((section) => {
+            section.items?.forEach((item) => {
+              items.push({...item, className: data.classes[0].name});
+            });
+          });
+          setClassworkData(items.slice(0, 5));
+
+          // Combine teacher and students
+          const people = [];
+          if (peopleRes.data.data?.teacher) {
+            people.push({
+              ...peopleRes.data.data.teacher,
+              role: "teacher",
+              className: data.classes[0].name,
+            });
+          }
+          peopleRes.data.data?.students?.forEach((s) => {
+            people.push({
+              ...s,
+              role: "student",
+              className: data.classes[0].name,
+            });
+          });
+          setPeopleData(people.slice(0, 10));
+        } catch {
+          // Silently handle errors for classwork/people
+        }
+      }
     } catch {
       // Keep default stats on error
     } finally {
@@ -62,41 +111,53 @@ const Dashboard = () => {
   // Teacher dashboard - multiple API calls (can be optimized later)
   const fetchTeacherDashboard = async () => {
     try {
-      const classResponse = await classAPI.getTeacherClasses();
+      const [classResponse, announcementsRes] = await Promise.all([
+        classAPI.getTeacherClasses(),
+        announcementAPI.getRecentAnnouncements(5),
+      ]);
       const classesData = classResponse.data.data || [];
+      setAnnouncements(announcementsRes.data.data || []);
 
       let quizCount = 0;
       let assignmentCount = 0;
       let meetingCount = 0;
       const activities = [];
+      let quizzes = [];
+      let assignments = [];
 
       if (classesData.length > 0) {
         const classId = classesData[0]._id;
         try {
-          const [quizRes, assignRes, meetRes] = await Promise.all([
-            quizAPI.getClassQuizzes(classId),
-            assignmentAPI.getClassAssignments(classId),
-            meetingAPI.getUpcomingMeetings(),
-          ]);
+          const [quizRes, assignRes, meetRes, classworkRes, peopleRes] =
+            await Promise.all([
+              quizAPI.getClassQuizzes(classId),
+              assignmentAPI.getClassAssignments(classId),
+              meetingAPI.getUpcomingMeetings(),
+              classworkAPI.getClasswork(classId),
+              classworkAPI.getClassPeople(classId),
+            ]);
 
-          quizCount = quizRes.data.data?.length || 0;
-          assignmentCount = assignRes.data.data?.length || 0;
+          quizzes = quizRes.data.data || [];
+          assignments = assignRes.data.data || [];
+          quizCount = quizzes.length;
+          assignmentCount = assignments.length;
           meetingCount = meetRes.data.data?.length || 0;
 
-          if (quizRes.data.data?.length > 0) {
+          if (quizzes.length > 0) {
             activities.push({
               type: "quiz",
-              title: quizRes.data.data[0].topic,
+              title: quizzes[0].topic,
               time: "Recent quiz",
               icon: "📝",
             });
           }
-          if (assignRes.data.data?.length > 0) {
-            const recent = assignRes.data.data[0];
+          if (assignments.length > 0) {
             activities.push({
               type: "assignment",
-              title: recent.title,
-              time: `Due: ${new Date(recent.dueDate).toLocaleDateString()}`,
+              title: assignments[0].title,
+              time: `Due: ${new Date(
+                assignments[0].dueDate
+              ).toLocaleDateString()}`,
               icon: "📋",
             });
           }
@@ -109,6 +170,35 @@ const Dashboard = () => {
               icon: "📹",
             });
           }
+
+          // Build classwork items
+          const items = [];
+          quizzes.forEach((q) => {
+            items.push({
+              ...q,
+              type: "quiz",
+              className: classesData[0].className,
+            });
+          });
+          assignments.forEach((a) => {
+            items.push({
+              ...a,
+              type: "assignment",
+              className: classesData[0].className,
+            });
+          });
+          setClassworkData(items.slice(0, 5));
+
+          // Get students
+          const people = [];
+          peopleRes.data.data?.students?.forEach((s) => {
+            people.push({
+              ...s,
+              role: "student",
+              className: classesData[0].className,
+            });
+          });
+          setPeopleData(people.slice(0, 10));
         } catch {
           // Silently handle errors
         }
@@ -567,6 +657,361 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Announcements Section with Tabs */}
+        <div
+          className={`mt-6 rounded-xl border overflow-hidden ${
+            isDark ? "bg-card border-border" : "bg-white border-gray-200"
+          }`}
+        >
+          {/* Tab Header */}
+          <div
+            className={`border-b ${
+              isDark ? "border-border" : "border-gray-200"
+            }`}
+          >
+            <div className="flex">
+              {[
+                {id: "stream", label: "Stream", icon: "📢"},
+                {id: "classwork", label: "Classwork", icon: "📚"},
+                {id: "people", label: "People", icon: "👥"},
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setDashboardTab(tab.id)}
+                  className={`flex-1 px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                    dashboardTab === tab.id
+                      ? isDark
+                        ? "bg-accent text-foreground border-b-2 border-blue-500"
+                        : "bg-gray-50 text-gray-900 border-b-2 border-blue-500"
+                      : isDark
+                      ? "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span>{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <div className="p-6">
+            {/* Stream Tab */}
+            {dashboardTab === "stream" && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3
+                    className={`font-semibold ${
+                      isDark ? "text-foreground" : "text-gray-900"
+                    }`}
+                  >
+                    Recent Announcements
+                  </h3>
+                  {classes.length > 0 && (
+                    <button
+                      onClick={() => navigate(`/classes/${classes[0]?.id}`)}
+                      className={`text-sm ${
+                        isDark
+                          ? "text-blue-400 hover:text-blue-300"
+                          : "text-blue-600 hover:text-blue-700"
+                      }`}
+                    >
+                      View All →
+                    </button>
+                  )}
+                </div>
+                {isLoading ? (
+                  [1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-20 rounded-lg animate-pulse ${
+                        isDark ? "bg-muted" : "bg-gray-100"
+                      }`}
+                    />
+                  ))
+                ) : announcements.length > 0 ? (
+                  announcements.map((announcement) => (
+                    <div
+                      key={announcement._id}
+                      className={`p-4 rounded-lg border transition-colors cursor-pointer ${
+                        isDark
+                          ? "border-border hover:bg-accent"
+                          : "border-gray-200 hover:bg-gray-50"
+                      } ${
+                        announcement.isPinned ? "ring-1 ring-yellow-500" : ""
+                      }`}
+                      onClick={() =>
+                        navigate(`/classes/${announcement.classId?._id}`)
+                      }
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-sm">
+                            {announcement.teacherId?.name?.charAt(0) || "T"}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span
+                              className={`font-medium text-sm ${
+                                isDark ? "text-foreground" : "text-gray-900"
+                              }`}
+                            >
+                              {announcement.teacherId?.name || "Teacher"}
+                            </span>
+                            <span
+                              className={`text-xs ${
+                                isDark
+                                  ? "text-muted-foreground"
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              • {announcement.classId?.className || "Class"}
+                            </span>
+                            {announcement.isPinned && (
+                              <span className="text-yellow-500 text-xs">
+                                📌
+                              </span>
+                            )}
+                          </div>
+                          {announcement.title && (
+                            <p
+                              className={`font-medium text-sm mb-1 ${
+                                isDark ? "text-foreground" : "text-gray-900"
+                              }`}
+                            >
+                              {announcement.title}
+                            </p>
+                          )}
+                          <p
+                            className={`text-sm line-clamp-2 ${
+                              isDark ? "text-muted-foreground" : "text-gray-600"
+                            }`}
+                          >
+                            {announcement.content}
+                          </p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              isDark ? "text-muted-foreground" : "text-gray-400"
+                            }`}
+                          >
+                            {new Date(
+                              announcement.createdAt
+                            ).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div
+                    className={`text-center py-8 ${
+                      isDark ? "text-muted-foreground" : "text-gray-500"
+                    }`}
+                  >
+                    <p className="text-3xl mb-2">📢</p>
+                    <p className="text-sm">No announcements yet</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Classwork Tab */}
+            {dashboardTab === "classwork" && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3
+                    className={`font-semibold ${
+                      isDark ? "text-foreground" : "text-gray-900"
+                    }`}
+                  >
+                    Recent Classwork
+                  </h3>
+                  {classes.length > 0 && (
+                    <button
+                      onClick={() => navigate(`/classes/${classes[0]?.id}`)}
+                      className={`text-sm ${
+                        isDark
+                          ? "text-blue-400 hover:text-blue-300"
+                          : "text-blue-600 hover:text-blue-700"
+                      }`}
+                    >
+                      View All →
+                    </button>
+                  )}
+                </div>
+                {isLoading ? (
+                  [1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-16 rounded-lg animate-pulse ${
+                        isDark ? "bg-muted" : "bg-gray-100"
+                      }`}
+                    />
+                  ))
+                ) : classworkData.length > 0 ? (
+                  classworkData.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-lg border transition-colors cursor-pointer ${
+                        isDark
+                          ? "border-border hover:bg-accent"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                      onClick={() =>
+                        navigate(
+                          item.type === "quiz"
+                            ? `/quizzes/${item._id}`
+                            : `/assignments/${item._id}`
+                        )
+                      }
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            item.type === "quiz"
+                              ? "bg-green-500/20 text-green-500"
+                              : item.type === "assignment"
+                              ? "bg-purple-500/20 text-purple-500"
+                              : "bg-blue-500/20 text-blue-500"
+                          }`}
+                        >
+                          <span className="text-xl">
+                            {item.type === "quiz"
+                              ? "📝"
+                              : item.type === "assignment"
+                              ? "📋"
+                              : "📁"}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <p
+                            className={`font-medium text-sm ${
+                              isDark ? "text-foreground" : "text-gray-900"
+                            }`}
+                          >
+                            {item.title || item.topic}
+                          </p>
+                          <p
+                            className={`text-xs ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            {item.className} •{" "}
+                            {item.type?.charAt(0).toUpperCase() +
+                              item.type?.slice(1)}
+                            {item.dueDate &&
+                              ` • Due: ${new Date(
+                                item.dueDate
+                              ).toLocaleDateString()}`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div
+                    className={`text-center py-8 ${
+                      isDark ? "text-muted-foreground" : "text-gray-500"
+                    }`}
+                  >
+                    <p className="text-3xl mb-2">📚</p>
+                    <p className="text-sm">No classwork yet</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* People Tab */}
+            {dashboardTab === "people" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3
+                    className={`font-semibold ${
+                      isDark ? "text-foreground" : "text-gray-900"
+                    }`}
+                  >
+                    {isTeacher ? "Your Students" : "Classmates & Teachers"}
+                  </h3>
+                </div>
+                {isLoading ? (
+                  [1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-14 rounded-lg animate-pulse ${
+                        isDark ? "bg-muted" : "bg-gray-100"
+                      }`}
+                    />
+                  ))
+                ) : peopleData.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {peopleData.map((person, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-lg border flex items-center gap-3 ${
+                          isDark ? "border-border" : "border-gray-200"
+                        }`}
+                      >
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            person.role === "teacher"
+                              ? "bg-gradient-to-br from-blue-500 to-purple-600"
+                              : "bg-gradient-to-br from-green-500 to-teal-600"
+                          }`}
+                        >
+                          <span className="text-white text-sm font-medium">
+                            {person.name?.charAt(0) || "U"}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`font-medium text-sm truncate ${
+                              isDark ? "text-foreground" : "text-gray-900"
+                            }`}
+                          >
+                            {person.name}
+                          </p>
+                          <p
+                            className={`text-xs truncate ${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            {person.role === "teacher"
+                              ? "Teacher"
+                              : person.rollNumber || person.email}
+                            {person.className && ` • ${person.className}`}
+                          </p>
+                        </div>
+                        {person.role === "teacher" && (
+                          <span
+                            className={`px-2 py-0.5 text-xs rounded-full ${
+                              isDark
+                                ? "bg-blue-500/20 text-blue-400"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            👨‍🏫
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className={`text-center py-8 ${
+                      isDark ? "text-muted-foreground" : "text-gray-500"
+                    }`}
+                  >
+                    <p className="text-3xl mb-2">👥</p>
+                    <p className="text-sm">No people to show</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
