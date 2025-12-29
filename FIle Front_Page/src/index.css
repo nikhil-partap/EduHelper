@@ -1,0 +1,16 @@
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global soft dark dashboard background */
+body {
+  background: radial-gradient(
+    circle at top,
+    #1c1f2a,
+    #0f1115 70%
+  );
+  color: #e5e7eb;
+  font-family: Inter, system-ui, sans-serif;
+}
