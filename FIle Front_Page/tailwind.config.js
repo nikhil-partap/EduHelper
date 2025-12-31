@@ -1,22 +1,16 @@
-export default Tailwindcss.config = {
+/** @type {import('tailwindcss').Config} */
+export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        // Backgrounds
         darkBase: "#0f1115",
         darkElevated: "#151821",
-
-        // Cards
         cardLight: "#f8fafc",
         cardSuccess: "#ecfdf5",
-
-        // Text
         textDark: "#e5e7eb",
         textMuted: "#9ca3af",
-
-        // Accent
         primary: "#2563eb",
       },
       boxShadow: {
