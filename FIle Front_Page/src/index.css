@@ -1,34 +1,308 @@
 @import "tailwindcss";
 
-@theme {
-  /* In v4, defining variables here automatically generates 
-    utilities like bg-primary, text-primary, border-primary, etc.
-  */
-  --color-primary: #5a4bda;
-  --color-secondary: #f3f4f6;
-  --color-accent: #fbbf24;
-
-  /* default font setup */
-  --font-family-sans: 'Inter', sans-serif; 
+/* --- Modern "Midnight Gradient" Theme --- */
+:root {
+  /* Backgrounds */
+  --bg-page: #030712;       /* Almost black, very deep gray */
+  --bg-card: #111827;       /* Dark rich gray for cards */
+  --bg-card-hover: #1f2937; /* Slightly lighter on hover */
+  
+  /* Text */
+  --text-head: #ffffff;     /* Pure white for headers */
+  --text-body: #9ca3af;     /* Cool gray for description */
+  
+  /* Modern Accents (Violet to Pink Gradient) */
+  --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  --text-gradient: linear-gradient(to right, #a78bfa, #f472b6); /* Lighter gradient for text */
+  --accent-glow: rgba(124, 58, 237, 0.4); /* Glow color */
+  
+  /* Borders */
+  --border-color: #1f2937;
+  --border-hover: #374151;
 }
 
-/* Global Styles */
 body {
-  background-color: #ffffff;
-  font-family: var(--font-family-sans);
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-head);
+  line-height: 1.6;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+/* --- Glassy Navbar --- */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 5%;
+  
+  /* Glass Effect */
+  background: rgba(3, 7, 18, 0.7);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
 }
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  /* Gradient Text for Logo */
+  background: var(--primary-gradient);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+  color:transparent;
 }
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+
+.login-btn {
+  background: transparent;
+  color: var(--text-head);
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+
+.login-btn:hover {
+  border-color: #db2777; /* Pink border on hover */
+  background: rgba(219, 39, 119, 0.1);
+  box-shadow: 0 0 15px rgba(219, 39, 119, 0.2);
 }
+
+/* --- Hero Section --- */
+.hero-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8rem 5%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background Glow behind Hero */
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: 20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hero-content {
+  max-width: 600px;
+}
+
+.hero-title {
+  font-size: 3.8rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  line-height: 1.1;
+  letter-spacing: -1px;
+}
+
+/* Highlight specific words in title if you wrap them in span, 
+   otherwise this colors the whole block slightly */
+.hero-title {
+  background: linear-gradient(to bottom, #ffffff, #d1d5db);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color:transparent;
+}
+
+.hero-description {
+  font-size: 1.15rem;
+  color: var(--text-body);
+  margin-bottom: 2.5rem;
+  max-width: 90%;
+}
+
+.student-access-btn {
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  padding: 1rem 2.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3); /* Purple Glow */
+}
+
+.student-access-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.5);
+}
+
+.dashboard-preview-placeholder {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  width: 550px;
+  height: 350px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-body);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Features Section --- */
+.features-section {
+  padding: 6rem 5%;
+}
+
+.features-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 4rem;
+  background: var(--text-gradient);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color:transparent;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.feature-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 2.5rem;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  background-color: var(--bg-card-hover);
+  border-color: #7c3aed; /* Violet border on hover */
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px -10px rgba(124, 58, 237, 0.2);
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  display: block;
+  /* Make emoji/icon glow slightly */
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.2));
+}
+
+.feature-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-head);
+  margin-bottom: 0.8rem;
+}
+
+.feature-card-description {
+  color: var(--text-body);
+  font-size: 0.95rem;
+}
+
+/* --- Stats Section --- */
+.stats-section {
+  background: rgba(17, 24, 39, 0.5); /* Semi-transparent */
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 4rem 5%;
+  display: flex;
+  justify-content: center;
+  gap: 6rem;
+  flex-wrap: wrap;
+}
+
+.stat-item h3 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0;
+  /* Gradient Numbers */
+  background: var(--primary-gradient);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color:transparent;
+}
+
+.stat-item p {
+  color: var(--text-body);
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+}
+
+/* --- CTA Footer --- */
+.cta-footer {
+  /* Dark Gradient Background */
+  background: linear-gradient(180deg, var(--bg-card) 0%, #030712 100%);
+  border: 1px solid var(--border-color);
+  padding: 5rem 2rem;
+  text-align: center;
+  margin: 4rem 5%;
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Top line glow on CTA card */
+.cta-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #db2777, transparent);
+}
+
+.cta-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  color: var(--text-head);
+}
+
+.cta-description {
+  color: var(--text-body);
+  margin-bottom: 2.5rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.launch-app-btn {
+  background: var(--text-head); /* White button */
+  color: black;
+  border: none;
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.launch-app-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+/* --- Footer --- */
+.main-footer {
+  padding: 4rem 5%;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-body);
+  font-size: 0.9rem;
+  text-align: center;
+}
+

@@ -1,6 +1,8 @@
 const Hero = () => {
   return (
-    <section className="bg-gradient-to-r from-indigo-50 to-purple-50 px-8 py-24">
+    <section
+  className="px-8 py-24"
+  style={{background: "linear-gradient(135deg, var(--bg-main), var(--bg-section))"}}>
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
         <div>
           <h1 className="text-5xl font-extrabold leading-tight">
