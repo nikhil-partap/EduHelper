@@ -211,17 +211,29 @@ export const announcementAPI = {
   togglePin: (announcementId) =>
     api.put(`/api/announcement/${announcementId}/pin`),
 
-  // Shared endpoints
+  // Stream endpoints
+  getPublicStream: (options = {}) => {
+    const params = new URLSearchParams();
+    if (options.page) params.append("page", options.page);
+    if (options.limit) params.append("limit", options.limit);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return api.get(`/api/announcement/stream${query}`);
+  },
   getRecentAnnouncements: (limit = 5) =>
     api.get(`/api/announcement/recent?limit=${limit}`),
+
+  // Class-specific endpoints
   getClassStream: (classId, options = {}) => {
     const params = new URLSearchParams();
     if (options.type) params.append("type", options.type);
     if (options.page) params.append("page", options.page);
     if (options.limit) params.append("limit", options.limit);
+    if (options.privateOnly) params.append("privateOnly", "true");
     const query = params.toString() ? `?${params.toString()}` : "";
     return api.get(`/api/announcement/class/${classId}${query}`);
   },
+
+  // Comments
   addComment: (announcementId, content) =>
     api.post(`/api/announcement/${announcementId}/comment`, {content}),
 };

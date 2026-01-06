@@ -65,6 +65,12 @@ const announcementSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+      // true = only visible to class members (Class tab)
+      // false = visible to all teachers (Stream tab)
+    },
     comments: [commentSchema],
   },
   { timestamps: true }

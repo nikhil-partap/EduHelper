@@ -2,6 +2,7 @@ import express from "express";
 import { protect, authorize } from "../middleware/auth.js";
 import {
   postAnnouncement,
+  getPublicStream,
   getClassStream,
   getRecentAnnouncements,
   addComment,
@@ -17,10 +18,13 @@ router.use(protect);
 // POST /api/announcement/post - Create announcement (teacher only)
 router.post("/post", authorize("teacher"), postAnnouncement);
 
+// GET /api/announcement/stream - Get public stream (all public announcements)
+router.get("/stream", getPublicStream);
+
 // GET /api/announcement/recent - Get recent announcements across all classes
 router.get("/recent", getRecentAnnouncements);
 
-// GET /api/announcement/class/:classId - Get class stream
+// GET /api/announcement/class/:classId - Get class-specific announcements
 router.get("/class/:classId", getClassStream);
 
 // POST /api/announcement/:announcementId/comment - Add comment

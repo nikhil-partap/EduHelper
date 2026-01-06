@@ -1,7 +1,7 @@
 import {useState, useEffect} from "react";
 import {useAuth} from "../hooks/useAuth";
 import {useTheme} from "../hooks/useTheme";
-import {classAPI, announcementAPI} from "../services/api";
+import {classAPI, announcementAPI, classworkAPI} from "../services/api";
 import {LoadingSpinner, Alert} from "../components/shared";
 
 const Announcements = () => {
@@ -10,9 +10,16 @@ const Announcements = () => {
   const isDark = theme === "dark";
   const isTeacher = user?.role === "teacher";
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState("stream");
+
+  // Data state
   const [classes, setClasses] = useState([]);
-  const [selectedClassId, setSelectedClassId] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
+  const [people, setPeople] = useState({teacher: null, students: []});
+
+  // UI state
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -21,6 +28,7 @@ const Announcements = () => {
   const [showPostForm, setShowPostForm] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [postTitle, setPostTitle] = useState("");
+  const [postClassId, setPostClassId] = useState("");
   const [isPosting, setIsPosting] = useState(false);
 
   // Comment state
@@ -31,22 +39,24 @@ const Announcements = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedClassId) {
-      fetchAnnouncements();
+    if (activeTab === "stream") {
+      fetchStreamAnnouncements();
+    } else if (activeTab === "class" && selectedClassId) {
+      fetchClassAnnouncements();
+    } else if (activeTab === "people" && selectedClassId) {
+      fetchClassPeople();
     }
-  }, [selectedClassId]);
+  }, [activeTab, selectedClassId]);
 
   const fetchClasses = async () => {
     try {
       const response = isTeacher
         ? await classAPI.getTeacherClasses()
         : await classAPI.getStudentClasses();
-
-      // Handle different response formats
       const classesData = response.data.data || response.data.classes || [];
       setClasses(classesData);
       if (classesData.length > 0) {
-        setSelectedClassId(classesData[0]._id);
+        setPostClassId(classesData[0]._id);
       }
     } catch (err) {
       setError("Failed to load classes");
@@ -55,13 +65,37 @@ const Announcements = () => {
     }
   };
 
-  const fetchAnnouncements = async () => {
+  const fetchStreamAnnouncements = async () => {
+    try {
+      setIsLoading(true);
+      const response = await announcementAPI.getPublicStream();
+      setAnnouncements(response.data.data || []);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to load stream");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchClassAnnouncements = async () => {
     try {
       setIsLoading(true);
       const response = await announcementAPI.getClassStream(selectedClassId);
       setAnnouncements(response.data.data || []);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to load announcements");
+      setError(err.response?.data?.error || "Failed to load announcements");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchClassPeople = async () => {
+    try {
+      setIsLoading(true);
+      const response = await classworkAPI.getClassPeople(selectedClassId);
+      setPeople(response.data.data || {teacher: null, students: []});
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to load people");
     } finally {
       setIsLoading(false);
     }
@@ -69,23 +103,39 @@ const Announcements = () => {
 
   const handlePost = async (e) => {
     e.preventDefault();
-    if (!postContent.trim() || !selectedClassId) return;
+    if (!postContent.trim()) return;
+
+    const targetClassId = activeTab === "class" ? selectedClassId : postClassId;
+    if (!targetClassId) {
+      setError("Please select a class");
+      return;
+    }
 
     setIsPosting(true);
     try {
       await announcementAPI.postAnnouncement({
-        classId: selectedClassId,
+        classId: targetClassId,
         title: postTitle.trim() || undefined,
         content: postContent.trim(),
         type: "announcement",
+        isPrivate: activeTab === "class", // Private if posting from Class tab
       });
       setPostContent("");
       setPostTitle("");
       setShowPostForm(false);
-      setSuccess("Announcement posted!");
-      fetchAnnouncements();
+      setSuccess(
+        activeTab === "class"
+          ? "Private announcement posted!"
+          : "Announcement posted to stream!"
+      );
+
+      if (activeTab === "stream") {
+        fetchStreamAnnouncements();
+      } else {
+        fetchClassAnnouncements();
+      }
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to post announcement");
+      setError(err.response?.data?.error || "Failed to post announcement");
     } finally {
       setIsPosting(false);
     }
@@ -98,9 +148,13 @@ const Announcements = () => {
     try {
       await announcementAPI.addComment(announcementId, content);
       setCommentText((prev) => ({...prev, [announcementId]: ""}));
-      fetchAnnouncements();
+      if (activeTab === "stream") {
+        fetchStreamAnnouncements();
+      } else {
+        fetchClassAnnouncements();
+      }
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to add comment");
+      setError(err.response?.data?.error || "Failed to add comment");
     }
   };
 
@@ -109,18 +163,26 @@ const Announcements = () => {
     try {
       await announcementAPI.deleteAnnouncement(announcementId);
       setSuccess("Announcement deleted");
-      fetchAnnouncements();
+      if (activeTab === "stream") {
+        fetchStreamAnnouncements();
+      } else {
+        fetchClassAnnouncements();
+      }
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete");
+      setError(err.response?.data?.error || "Failed to delete");
     }
   };
 
   const handleTogglePin = async (announcementId) => {
     try {
       await announcementAPI.togglePin(announcementId);
-      fetchAnnouncements();
+      if (activeTab === "stream") {
+        fetchStreamAnnouncements();
+      } else {
+        fetchClassAnnouncements();
+      }
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to toggle pin");
+      setError(err.response?.data?.error || "Failed to toggle pin");
     }
   };
 
@@ -141,6 +203,723 @@ const Announcements = () => {
 
   const selectedClass = classes.find((c) => c._id === selectedClassId);
 
+  // Render announcement card
+  const renderAnnouncementCard = (announcement) => (
+    <div
+      key={announcement._id}
+      className={`p-4 rounded-lg border ${
+        isDark ? "bg-card border-border" : "bg-white border-gray-200"
+      } ${announcement.isPinned ? "ring-2 ring-yellow-500" : ""}`}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <span className="text-white text-sm font-medium">
+              {announcement.teacherId?.name?.charAt(0) || "T"}
+            </span>
+          </div>
+          <div>
+            <p
+              className={`font-medium ${
+                isDark ? "text-foreground" : "text-gray-900"
+              }`}
+            >
+              {announcement.teacherId?.name || "Teacher"}
+            </p>
+            <p
+              className={`text-xs ${
+                isDark ? "text-muted-foreground" : "text-gray-500"
+              }`}
+            >
+              {announcement.classId?.className && (
+                <span className="text-blue-400">
+                  {announcement.classId.className} •{" "}
+                </span>
+              )}
+              {formatDate(announcement.createdAt)}
+              {announcement.isPinned && " • 📌 Pinned"}
+              {announcement.isPrivate && " • 🔒 Private"}
+            </p>
+          </div>
+        </div>
+        {isTeacher && announcement.teacherId?._id === user?._id && (
+          <div className="flex gap-1">
+            <button
+              onClick={() => handleTogglePin(announcement._id)}
+              className={`p-2 rounded-lg transition-colors ${
+                isDark ? "hover:bg-accent" : "hover:bg-gray-100"
+              }`}
+              title={announcement.isPinned ? "Unpin" : "Pin"}
+            >
+              {announcement.isPinned ? "📌" : "📍"}
+            </button>
+            <button
+              onClick={() => handleDelete(announcement._id)}
+              className={`p-2 rounded-lg transition-colors text-red-500 ${
+                isDark ? "hover:bg-red-500/10" : "hover:bg-red-50"
+              }`}
+              title="Delete"
+            >
+              🗑️
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      {announcement.title && (
+        <h3
+          className={`font-semibold mb-2 ${
+            isDark ? "text-foreground" : "text-gray-900"
+          }`}
+        >
+          {announcement.title}
+        </h3>
+      )}
+      <p
+        className={`whitespace-pre-wrap ${
+          isDark ? "text-muted-foreground" : "text-gray-600"
+        }`}
+      >
+        {announcement.content}
+      </p>
+
+      {/* Comments */}
+      {announcement.comments?.length > 0 && (
+        <div
+          className={`mt-4 pt-4 border-t ${
+            isDark ? "border-border" : "border-gray-200"
+          }`}
+        >
+          <p
+            className={`text-sm font-medium mb-2 ${
+              isDark ? "text-foreground" : "text-gray-900"
+            }`}
+          >
+            Comments ({announcement.comments.length})
+          </p>
+          <div className="space-y-2">
+            {announcement.comments.map((comment, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs">
+                    {comment.userId?.name?.charAt(0) || "U"}
+                  </span>
+                </div>
+                <div
+                  className={`flex-1 p-2 rounded-lg ${
+                    isDark ? "bg-secondary" : "bg-gray-100"
+                  }`}
+                >
+                  <p
+                    className={`text-xs font-medium ${
+                      isDark ? "text-foreground" : "text-gray-900"
+                    }`}
+                  >
+                    {comment.userId?.name || "User"}
+                  </p>
+                  <p
+                    className={`text-sm ${
+                      isDark ? "text-muted-foreground" : "text-gray-600"
+                    }`}
+                  >
+                    {comment.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add Comment */}
+      <div
+        className={`mt-4 pt-4 border-t ${
+          isDark ? "border-border" : "border-gray-200"
+        }`}
+      >
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={commentText[announcement._id] || ""}
+            onChange={(e) =>
+              setCommentText((prev) => ({
+                ...prev,
+                [announcement._id]: e.target.value,
+              }))
+            }
+            placeholder="Add a comment..."
+            className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
+              isDark
+                ? "bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+                : "bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400"
+            }`}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleComment(announcement._id);
+              }
+            }}
+          />
+          <button
+            onClick={() => handleComment(announcement._id)}
+            disabled={!commentText[announcement._id]?.trim()}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            Post
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render post form
+  const renderPostForm = () => {
+    if (!isTeacher) return null;
+
+    const targetClass =
+      activeTab === "class"
+        ? selectedClass
+        : classes.find((c) => c._id === postClassId);
+
+    return (
+      <div className="mb-6">
+        {!showPostForm ? (
+          <button
+            onClick={() => setShowPostForm(true)}
+            className={`w-full p-4 rounded-lg border-2 border-dashed text-left transition-colors ${
+              isDark
+                ? "border-border hover:border-blue-500 hover:bg-accent"
+                : "border-gray-300 hover:border-blue-500 hover:bg-gray-50"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <span className="text-white text-sm font-medium">
+                  {user?.name?.charAt(0) || "T"}
+                </span>
+              </div>
+              <span
+                className={isDark ? "text-muted-foreground" : "text-gray-500"}
+              >
+                {activeTab === "class"
+                  ? `Post a private announcement to ${
+                      selectedClass?.className || "this class"
+                    }...`
+                  : "Announce something to the stream..."}
+              </span>
+            </div>
+          </button>
+        ) : (
+          <form
+            onSubmit={handlePost}
+            className={`p-4 rounded-lg border ${
+              isDark ? "bg-card border-border" : "bg-white border-gray-200"
+            }`}
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-sm font-medium">
+                  {user?.name?.charAt(0) || "T"}
+                </span>
+              </div>
+              <div className="flex-1">
+                {/* Class selector for Stream tab */}
+                {activeTab === "stream" && (
+                  <select
+                    value={postClassId}
+                    onChange={(e) => setPostClassId(e.target.value)}
+                    className={`w-full mb-2 px-3 py-2 rounded-lg border text-sm ${
+                      isDark
+                        ? "bg-secondary border-border text-foreground"
+                        : "bg-gray-50 border-gray-200 text-gray-900"
+                    }`}
+                  >
+                    {classes.map((cls) => (
+                      <option key={cls._id} value={cls._id}>
+                        {cls.className} - {cls.subject}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <input
+                  type="text"
+                  value={postTitle}
+                  onChange={(e) => setPostTitle(e.target.value)}
+                  placeholder="Title (optional)"
+                  className={`w-full mb-2 px-3 py-2 rounded-lg border text-sm ${
+                    isDark
+                      ? "bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+                      : "bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400"
+                  }`}
+                />
+                <textarea
+                  value={postContent}
+                  onChange={(e) => setPostContent(e.target.value)}
+                  placeholder={
+                    activeTab === "class"
+                      ? "Share a private announcement with this class..."
+                      : "Share an announcement to the stream..."
+                  }
+                  rows={4}
+                  className={`w-full px-3 py-2 rounded-lg border resize-none text-sm ${
+                    isDark
+                      ? "bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+                      : "bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400"
+                  }`}
+                  autoFocus
+                />
+                {activeTab === "class" && (
+                  <p
+                    className={`text-xs mt-1 ${
+                      isDark ? "text-muted-foreground" : "text-gray-500"
+                    }`}
+                  >
+                    🔒 This announcement will only be visible to students in{" "}
+                    {selectedClass?.className}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPostForm(false);
+                  setPostContent("");
+                  setPostTitle("");
+                }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isDark
+                    ? "text-muted-foreground hover:bg-accent"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!postContent.trim() || isPosting}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {isPosting ? "Posting..." : "Post"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    );
+  };
+
+  // Render Stream Tab
+  const renderStreamTab = () => (
+    <div>
+      {renderPostForm()}
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <LoadingSpinner />
+        </div>
+      ) : announcements.length > 0 ? (
+        <div className="space-y-4">
+          {announcements.map(renderAnnouncementCard)}
+        </div>
+      ) : (
+        <div
+          className={`text-center py-12 rounded-lg border ${
+            isDark ? "bg-card border-border" : "bg-white border-gray-200"
+          }`}
+        >
+          <p className="text-4xl mb-4">📢</p>
+          <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+            No announcements in the stream yet
+          </p>
+          {isTeacher && (
+            <p
+              className={`text-sm mt-2 ${
+                isDark ? "text-muted-foreground" : "text-gray-400"
+              }`}
+            >
+              Click above to post your first announcement
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  // Render Class Tab
+  const renderClassTab = () => (
+    <div>
+      {!selectedClassId ? (
+        // Show class list
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {classes.length > 0 ? (
+            classes.map((cls) => (
+              <button
+                key={cls._id}
+                onClick={() => setSelectedClassId(cls._id)}
+                className={`p-4 rounded-lg border text-left transition-all hover:shadow-md ${
+                  isDark
+                    ? "bg-card border-border hover:border-blue-500"
+                    : "bg-white border-gray-200 hover:border-blue-500"
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <span className="text-white text-lg">📚</span>
+                  </div>
+                  <div>
+                    <h3
+                      className={`font-semibold ${
+                        isDark ? "text-foreground" : "text-gray-900"
+                      }`}
+                    >
+                      {cls.className}
+                    </h3>
+                    <p
+                      className={`text-sm ${
+                        isDark ? "text-muted-foreground" : "text-gray-500"
+                      }`}
+                    >
+                      {cls.subject}
+                    </p>
+                  </div>
+                </div>
+                <p
+                  className={`text-xs ${
+                    isDark ? "text-muted-foreground" : "text-gray-400"
+                  }`}
+                >
+                  Click to view announcements →
+                </p>
+              </button>
+            ))
+          ) : (
+            <div
+              className={`col-span-full text-center py-12 rounded-lg border ${
+                isDark ? "bg-card border-border" : "bg-white border-gray-200"
+              }`}
+            >
+              <p className="text-4xl mb-4">📚</p>
+              <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+                {isTeacher
+                  ? "Create a class first"
+                  : "Join a class to see announcements"}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        // Show class announcements
+        <div>
+          {/* Back button */}
+          <button
+            onClick={() => setSelectedClassId(null)}
+            className={`mb-4 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              isDark
+                ? "hover:bg-accent text-muted-foreground"
+                : "hover:bg-gray-100 text-gray-600"
+            }`}
+          >
+            ← Back to classes
+          </button>
+
+          {/* Class header */}
+          <div
+            className={`p-4 rounded-lg border mb-6 ${
+              isDark ? "bg-card border-border" : "bg-white border-gray-200"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <span className="text-white text-lg">📚</span>
+              </div>
+              <div>
+                <h2
+                  className={`text-xl font-bold ${
+                    isDark ? "text-foreground" : "text-gray-900"
+                  }`}
+                >
+                  {selectedClass?.className}
+                </h2>
+                <p
+                  className={isDark ? "text-muted-foreground" : "text-gray-500"}
+                >
+                  {selectedClass?.subject}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {renderPostForm()}
+
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
+            </div>
+          ) : announcements.length > 0 ? (
+            <div className="space-y-4">
+              {announcements.map(renderAnnouncementCard)}
+            </div>
+          ) : (
+            <div
+              className={`text-center py-12 rounded-lg border ${
+                isDark ? "bg-card border-border" : "bg-white border-gray-200"
+              }`}
+            >
+              <p className="text-4xl mb-4">📢</p>
+              <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+                No announcements in this class yet
+              </p>
+              {isTeacher && (
+                <p
+                  className={`text-sm mt-2 ${
+                    isDark ? "text-muted-foreground" : "text-gray-400"
+                  }`}
+                >
+                  Post a private announcement above
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  // Render People Tab
+  const renderPeopleTab = () => (
+    <div>
+      {!selectedClassId ? (
+        // Show class list
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {classes.length > 0 ? (
+            classes.map((cls) => (
+              <button
+                key={cls._id}
+                onClick={() => setSelectedClassId(cls._id)}
+                className={`p-4 rounded-lg border text-left transition-all hover:shadow-md ${
+                  isDark
+                    ? "bg-card border-border hover:border-blue-500"
+                    : "bg-white border-gray-200 hover:border-blue-500"
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+                    <span className="text-white text-lg">👥</span>
+                  </div>
+                  <div>
+                    <h3
+                      className={`font-semibold ${
+                        isDark ? "text-foreground" : "text-gray-900"
+                      }`}
+                    >
+                      {cls.className}
+                    </h3>
+                    <p
+                      className={`text-sm ${
+                        isDark ? "text-muted-foreground" : "text-gray-500"
+                      }`}
+                    >
+                      {cls.subject}
+                    </p>
+                  </div>
+                </div>
+                <p
+                  className={`text-xs ${
+                    isDark ? "text-muted-foreground" : "text-gray-400"
+                  }`}
+                >
+                  Click to view members →
+                </p>
+              </button>
+            ))
+          ) : (
+            <div
+              className={`col-span-full text-center py-12 rounded-lg border ${
+                isDark ? "bg-card border-border" : "bg-white border-gray-200"
+              }`}
+            >
+              <p className="text-4xl mb-4">👥</p>
+              <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
+                {isTeacher
+                  ? "Create a class first"
+                  : "Join a class to see members"}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        // Show class people
+        <div>
+          {/* Back button */}
+          <button
+            onClick={() => setSelectedClassId(null)}
+            className={`mb-4 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              isDark
+                ? "hover:bg-accent text-muted-foreground"
+                : "hover:bg-gray-100 text-gray-600"
+            }`}
+          >
+            ← Back to classes
+          </button>
+
+          {/* Class header */}
+          <div
+            className={`p-4 rounded-lg border mb-6 ${
+              isDark ? "bg-card border-border" : "bg-white border-gray-200"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+                <span className="text-white text-lg">👥</span>
+              </div>
+              <div>
+                <h2
+                  className={`text-xl font-bold ${
+                    isDark ? "text-foreground" : "text-gray-900"
+                  }`}
+                >
+                  {selectedClass?.className}
+                </h2>
+                <p
+                  className={isDark ? "text-muted-foreground" : "text-gray-500"}
+                >
+                  {selectedClass?.subject} •{" "}
+                  {(people.students?.length || 0) + 1} members
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Teacher Section */}
+              <div>
+                <h3
+                  className={`text-sm font-semibold mb-3 ${
+                    isDark ? "text-muted-foreground" : "text-gray-500"
+                  }`}
+                >
+                  TEACHER
+                </h3>
+                {people.teacher && (
+                  <div
+                    className={`p-4 rounded-lg border ${
+                      isDark
+                        ? "bg-card border-border"
+                        : "bg-white border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {people.teacher.name?.charAt(0) || "T"}
+                        </span>
+                      </div>
+                      <div>
+                        <p
+                          className={`font-medium ${
+                            isDark ? "text-foreground" : "text-gray-900"
+                          }`}
+                        >
+                          {people.teacher.name}
+                        </p>
+                        <p
+                          className={`text-sm ${
+                            isDark ? "text-muted-foreground" : "text-gray-500"
+                          }`}
+                        >
+                          {people.teacher.email}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Students Section */}
+              <div>
+                <h3
+                  className={`text-sm font-semibold mb-3 ${
+                    isDark ? "text-muted-foreground" : "text-gray-500"
+                  }`}
+                >
+                  STUDENTS ({people.students?.length || 0})
+                </h3>
+                {people.students?.length > 0 ? (
+                  <div className="space-y-2">
+                    {people.students.map((student) => (
+                      <div
+                        key={student._id}
+                        className={`p-4 rounded-lg border ${
+                          isDark
+                            ? "bg-card border-border"
+                            : "bg-white border-gray-200"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
+                              {student.name?.charAt(0) || "S"}
+                            </span>
+                          </div>
+                          <div>
+                            <p
+                              className={`font-medium ${
+                                isDark ? "text-foreground" : "text-gray-900"
+                              }`}
+                            >
+                              {student.name}
+                            </p>
+                            <p
+                              className={`text-sm ${
+                                isDark
+                                  ? "text-muted-foreground"
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              {student.email}
+                              {student.rollNumber &&
+                                ` • Roll: ${student.rollNumber}`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className={`text-center py-8 rounded-lg border ${
+                      isDark
+                        ? "bg-card border-border"
+                        : "bg-white border-gray-200"
+                    }`}
+                  >
+                    <p
+                      className={
+                        isDark ? "text-muted-foreground" : "text-gray-500"
+                      }
+                    >
+                      No students enrolled yet
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  // Main loading state
   if (isLoading && classes.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -148,6 +927,12 @@ const Announcements = () => {
       </div>
     );
   }
+
+  const tabs = [
+    {id: "stream", label: "Stream", icon: "📢"},
+    {id: "class", label: "Class", icon: "📚"},
+    {id: "people", label: "People", icon: "👥"},
+  ];
 
   return (
     <div className={`min-h-screen ${isDark ? "bg-background" : "bg-gray-50"}`}>
@@ -163,7 +948,7 @@ const Announcements = () => {
           </h1>
           <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
             {isTeacher
-              ? "Post and manage class announcements"
+              ? "Post and manage announcements for your classes"
               : "View announcements from your classes"}
           </p>
         </div>
@@ -180,342 +965,40 @@ const Announcements = () => {
           />
         )}
 
-        {/* Class Selector */}
-        {classes.length > 0 ? (
-          <div className="mb-6">
-            <label
-              className={`block text-sm font-medium mb-2 ${
-                isDark ? "text-foreground" : "text-gray-700"
+        {/* Tabs */}
+        <div
+          className={`flex gap-1 p-1 rounded-lg mb-6 ${
+            isDark ? "bg-secondary" : "bg-gray-200"
+          }`}
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setSelectedClassId(null);
+                setShowPostForm(false);
+              }}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? isDark
+                    ? "bg-card text-foreground shadow-sm"
+                    : "bg-white text-gray-900 shadow-sm"
+                  : isDark
+                  ? "text-muted-foreground hover:text-foreground"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
-              Select Class
-            </label>
-            <select
-              value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
-              className={`w-full md:w-64 px-4 py-2 rounded-lg border ${
-                isDark
-                  ? "bg-card border-border text-foreground"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
-            >
-              {classes.map((cls) => (
-                <option key={cls._id} value={cls._id}>
-                  {cls.className} - {cls.subject}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <div
-            className={`text-center py-12 rounded-lg border ${
-              isDark ? "bg-card border-border" : "bg-white border-gray-200"
-            }`}
-          >
-            <p className="text-4xl mb-4">📚</p>
-            <p className={isDark ? "text-muted-foreground" : "text-gray-500"}>
-              {isTeacher
-                ? "Create a class first to post announcements"
-                : "Join a class to see announcements"}
-            </p>
-          </div>
-        )}
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
 
-        {/* Post Form (Teachers Only) */}
-        {isTeacher && selectedClassId && (
-          <div className="mb-6">
-            {!showPostForm ? (
-              <button
-                onClick={() => setShowPostForm(true)}
-                className={`w-full p-4 rounded-lg border-2 border-dashed text-left transition-colors ${
-                  isDark
-                    ? "border-border hover:border-blue-500 hover:bg-accent"
-                    : "border-gray-300 hover:border-blue-500 hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {user?.name?.charAt(0) || "T"}
-                    </span>
-                  </div>
-                  <span
-                    className={
-                      isDark ? "text-muted-foreground" : "text-gray-500"
-                    }
-                  >
-                    Announce something to {selectedClass?.className}...
-                  </span>
-                </div>
-              </button>
-            ) : (
-              <form
-                onSubmit={handlePost}
-                className={`p-4 rounded-lg border ${
-                  isDark ? "bg-card border-border" : "bg-white border-gray-200"
-                }`}
-              >
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-medium">
-                      {user?.name?.charAt(0) || "T"}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={postTitle}
-                      onChange={(e) => setPostTitle(e.target.value)}
-                      placeholder="Title (optional)"
-                      className={`w-full mb-2 px-3 py-2 rounded-lg border text-sm ${
-                        isDark
-                          ? "bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-                          : "bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400"
-                      }`}
-                    />
-                    <textarea
-                      value={postContent}
-                      onChange={(e) => setPostContent(e.target.value)}
-                      placeholder="Share an announcement with your class..."
-                      rows={4}
-                      className={`w-full px-3 py-2 rounded-lg border resize-none text-sm ${
-                        isDark
-                          ? "bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-                          : "bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400"
-                      }`}
-                      autoFocus
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPostForm(false);
-                      setPostContent("");
-                      setPostTitle("");
-                    }}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isDark
-                        ? "text-muted-foreground hover:bg-accent"
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!postContent.trim() || isPosting}
-                    className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  >
-                    {isPosting ? "Posting..." : "Post"}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
-
-        {/* Announcements List */}
-        {selectedClassId && (
-          <div className="space-y-4">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <LoadingSpinner />
-              </div>
-            ) : announcements.length > 0 ? (
-              announcements.map((announcement) => (
-                <div
-                  key={announcement._id}
-                  className={`p-4 rounded-lg border ${
-                    isDark
-                      ? "bg-card border-border"
-                      : "bg-white border-gray-200"
-                  } ${announcement.isPinned ? "ring-2 ring-yellow-500" : ""}`}
-                >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {announcement.teacherId?.name?.charAt(0) || "T"}
-                        </span>
-                      </div>
-                      <div>
-                        <p
-                          className={`font-medium ${
-                            isDark ? "text-foreground" : "text-gray-900"
-                          }`}
-                        >
-                          {announcement.teacherId?.name || "Teacher"}
-                        </p>
-                        <p
-                          className={`text-xs ${
-                            isDark ? "text-muted-foreground" : "text-gray-500"
-                          }`}
-                        >
-                          {formatDate(announcement.createdAt)}
-                          {announcement.isPinned && " • 📌 Pinned"}
-                        </p>
-                      </div>
-                    </div>
-                    {isTeacher && (
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleTogglePin(announcement._id)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            isDark ? "hover:bg-accent" : "hover:bg-gray-100"
-                          }`}
-                          title={announcement.isPinned ? "Unpin" : "Pin"}
-                        >
-                          {announcement.isPinned ? "📌" : "📍"}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(announcement._id)}
-                          className={`p-2 rounded-lg transition-colors text-red-500 ${
-                            isDark ? "hover:bg-red-500/10" : "hover:bg-red-50"
-                          }`}
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  {announcement.title && (
-                    <h3
-                      className={`font-semibold mb-2 ${
-                        isDark ? "text-foreground" : "text-gray-900"
-                      }`}
-                    >
-                      {announcement.title}
-                    </h3>
-                  )}
-                  <p
-                    className={`whitespace-pre-wrap ${
-                      isDark ? "text-muted-foreground" : "text-gray-600"
-                    }`}
-                  >
-                    {announcement.content}
-                  </p>
-
-                  {/* Comments */}
-                  {announcement.comments?.length > 0 && (
-                    <div
-                      className={`mt-4 pt-4 border-t ${
-                        isDark ? "border-border" : "border-gray-200"
-                      }`}
-                    >
-                      <p
-                        className={`text-sm font-medium mb-2 ${
-                          isDark ? "text-foreground" : "text-gray-900"
-                        }`}
-                      >
-                        Comments ({announcement.comments.length})
-                      </p>
-                      <div className="space-y-2">
-                        {announcement.comments.map((comment, idx) => (
-                          <div key={idx} className="flex items-start gap-2">
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center flex-shrink-0">
-                              <span className="text-white text-xs">
-                                {comment.authorId?.name?.charAt(0) || "U"}
-                              </span>
-                            </div>
-                            <div
-                              className={`flex-1 p-2 rounded-lg ${
-                                isDark ? "bg-secondary" : "bg-gray-100"
-                              }`}
-                            >
-                              <p
-                                className={`text-xs font-medium ${
-                                  isDark ? "text-foreground" : "text-gray-900"
-                                }`}
-                              >
-                                {comment.authorId?.name || "User"}
-                              </p>
-                              <p
-                                className={`text-sm ${
-                                  isDark
-                                    ? "text-muted-foreground"
-                                    : "text-gray-600"
-                                }`}
-                              >
-                                {comment.content}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Add Comment */}
-                  <div
-                    className={`mt-4 pt-4 border-t ${
-                      isDark ? "border-border" : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={commentText[announcement._id] || ""}
-                        onChange={(e) =>
-                          setCommentText((prev) => ({
-                            ...prev,
-                            [announcement._id]: e.target.value,
-                          }))
-                        }
-                        placeholder="Add a comment..."
-                        className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
-                          isDark
-                            ? "bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-                            : "bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400"
-                        }`}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleComment(announcement._id);
-                          }
-                        }}
-                      />
-                      <button
-                        onClick={() => handleComment(announcement._id)}
-                        disabled={!commentText[announcement._id]?.trim()}
-                        className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                      >
-                        Post
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div
-                className={`text-center py-12 rounded-lg border ${
-                  isDark ? "bg-card border-border" : "bg-white border-gray-200"
-                }`}
-              >
-                <p className="text-4xl mb-4">📢</p>
-                <p
-                  className={isDark ? "text-muted-foreground" : "text-gray-500"}
-                >
-                  No announcements yet
-                </p>
-                {isTeacher && (
-                  <p
-                    className={`text-sm mt-2 ${
-                      isDark ? "text-muted-foreground" : "text-gray-400"
-                    }`}
-                  >
-                    Click above to post your first announcement
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Tab Content */}
+        {activeTab === "stream" && renderStreamTab()}
+        {activeTab === "class" && renderClassTab()}
+        {activeTab === "people" && renderPeopleTab()}
       </div>
     </div>
   );
