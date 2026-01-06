@@ -40,6 +40,7 @@ import QuizStats from "./pages/QuizStats";
 import StudyPlanner from "./pages/StudyPlanner";
 import StudentReports from "./pages/StudentReports";
 import Portfolio from "./pages/Portfolio";
+import Announcements from "./pages/Announcements";
 
 // Protected Route Component
 const ProtectedRoute = ({children}) => {
@@ -148,6 +149,14 @@ const AppContent = () => {
               element={
                 <ProtectedRoute>
                   <ClassesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/announcements"
+              element={
+                <ProtectedRoute>
+                  <Announcements />
                 </ProtectedRoute>
               }
             />

@@ -37,6 +37,12 @@ const Sidebar = () => {
   const teacherMenuItems = [
     {id: "dashboard", label: "Dashboard", href: "/dashboard", icon: "🏠"},
     {id: "classes", label: "My Classes", href: "/classes", icon: "📚"},
+    {
+      id: "announcements",
+      label: "Announcements",
+      href: "/announcements",
+      icon: "📢",
+    },
     {id: "attendance", label: "Attendance", href: "/attendance", icon: "✅"},
     {id: "quizzes", label: "Quizzes", href: "/quizzes", icon: "📝"},
     {id: "assignments", label: "Assignments", href: "/assignments", icon: "📋"},
@@ -55,6 +61,12 @@ const Sidebar = () => {
   const studentMenuItems = [
     {id: "dashboard", label: "Dashboard", href: "/dashboard", icon: "🏠"},
     {id: "classes", label: "My Classes", href: "/classes", icon: "📚"},
+    {
+      id: "announcements",
+      label: "Announcements",
+      href: "/announcements",
+      icon: "📢",
+    },
     {id: "take-quiz", label: "Take Quiz", href: "/quizzes", icon: "📝"},
     {id: "assignments", label: "Assignments", href: "/assignments", icon: "📋"},
     {id: "portfolio", label: "Portfolio", href: "/portfolio", icon: "📈"},

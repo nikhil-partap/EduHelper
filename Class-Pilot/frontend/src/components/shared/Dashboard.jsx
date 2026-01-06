@@ -34,6 +34,12 @@ const Dashboard = () => {
   const [dashboardTab, setDashboardTab] = useState("stream");
   const [isLoading, setIsLoading] = useState(true);
 
+  // Announcement form state
+  const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+  const [announcementContent, setAnnouncementContent] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState("");
+  const [isPostingAnnouncement, setIsPostingAnnouncement] = useState(false);
+
   const isTeacher = user?.role === "teacher";
 
   useEffect(() => {
@@ -224,6 +230,35 @@ const Dashboard = () => {
       // Keep default stats
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Post announcement handler
+  const handlePostAnnouncement = async (e) => {
+    e.preventDefault();
+    if (!announcementContent.trim() || !selectedClassId) return;
+
+    setIsPostingAnnouncement(true);
+    try {
+      const response = await announcementAPI.postAnnouncement({
+        classId: selectedClassId,
+        content: announcementContent.trim(),
+        type: "announcement",
+      });
+
+      // Add new announcement to the top of the list
+      if (response.data.data) {
+        setAnnouncements((prev) => [response.data.data, ...prev]);
+      }
+
+      // Reset form
+      setAnnouncementContent("");
+      setShowAnnouncementForm(false);
+    } catch (error) {
+      console.error("Failed to post announcement:", error);
+      alert(error.response?.data?.message || "Failed to post announcement");
+    } finally {
+      setIsPostingAnnouncement(false);
     }
   };
 
@@ -703,6 +738,124 @@ const Dashboard = () => {
             {/* Stream Tab */}
             {dashboardTab === "stream" && (
               <div className="space-y-3">
+                {/* Teacher Announcement Form */}
+                {isTeacher && classes.length > 0 && (
+                  <div className="mb-4">
+                    {!showAnnouncementForm ? (
+                      <button
+                        onClick={() => {
+                          setShowAnnouncementForm(true);
+                          if (!selectedClassId && classes.length > 0) {
+                            setSelectedClassId(classes[0].id);
+                          }
+                        }}
+                        className={`w-full p-4 rounded-lg border-2 border-dashed text-left transition-colors ${
+                          isDark
+                            ? "border-border hover:border-blue-500 hover:bg-accent"
+                            : "border-gray-300 hover:border-blue-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
+                              {user?.name?.charAt(0) || "T"}
+                            </span>
+                          </div>
+                          <span
+                            className={`${
+                              isDark ? "text-muted-foreground" : "text-gray-500"
+                            }`}
+                          >
+                            Announce something to your class...
+                          </span>
+                        </div>
+                      </button>
+                    ) : (
+                      <form
+                        onSubmit={handlePostAnnouncement}
+                        className={`p-4 rounded-lg border ${
+                          isDark
+                            ? "bg-card border-border"
+                            : "bg-white border-gray-200"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-sm font-medium">
+                              {user?.name?.charAt(0) || "T"}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <select
+                              value={selectedClassId}
+                              onChange={(e) =>
+                                setSelectedClassId(e.target.value)
+                              }
+                              className={`w-full mb-2 px-3 py-2 rounded-lg border text-sm ${
+                                isDark
+                                  ? "bg-secondary border-border text-foreground"
+                                  : "bg-gray-50 border-gray-200 text-gray-900"
+                              }`}
+                            >
+                              <option value="">Select a class</option>
+                              {classes.map((cls) => (
+                                <option key={cls.id} value={cls.id}>
+                                  {cls.name}
+                                </option>
+                              ))}
+                            </select>
+                            <textarea
+                              value={announcementContent}
+                              onChange={(e) =>
+                                setAnnouncementContent(e.target.value)
+                              }
+                              placeholder="Share an announcement with your class..."
+                              rows={3}
+                              className={`w-full px-3 py-2 rounded-lg border resize-none text-sm ${
+                                isDark
+                                  ? "bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+                                  : "bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400"
+                              }`}
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAnnouncementForm(false);
+                              setAnnouncementContent("");
+                            }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              isDark
+                                ? "text-muted-foreground hover:bg-accent"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={
+                              !announcementContent.trim() ||
+                              !selectedClassId ||
+                              isPostingAnnouncement
+                            }
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              isDark
+                                ? "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                                : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                            }`}
+                          >
+                            {isPostingAnnouncement ? "Posting..." : "Post"}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between mb-4">
                   <h3
                     className={`font-semibold ${
