@@ -16,6 +16,7 @@ export const postAnnouncement = async (req, res) => {
       referenceId,
       referenceModel,
       attachments,
+      isPrivate = false,
     } = req.body;
 
     if (!classId || !content) {
@@ -50,9 +51,11 @@ export const postAnnouncement = async (req, res) => {
       referenceId,
       referenceModel,
       attachments,
+      isPrivate,
     });
 
     await announcement.populate("teacherId", "name email");
+    await announcement.populate("classId", "className subject");
 
     res.status(201).json({
       success: true,
@@ -68,14 +71,67 @@ export const postAnnouncement = async (req, res) => {
 };
 
 /**
- * @desc    Get class stream (all announcements)
+ * @desc    Get public stream (all public announcements across all classes for teachers)
+ * @route   GET /api/announcement/stream
+ * @access  Private (Teachers see all public, Students see their classes' public)
+ */
+export const getPublicStream = async (req, res) => {
+  try {
+    const { limit = 20, page = 1 } = req.query;
+    const userId = req.user.id;
+    const isTeacher = req.user.role === "teacher";
+
+    let query = { isPrivate: false };
+
+    if (isTeacher) {
+      // Teachers see all public announcements from all classes
+      // No class filter needed
+    } else {
+      // Students only see public announcements from their enrolled classes
+      const classes = await Class.find({ students: userId }).select("_id");
+      const classIds = classes.map((c) => c._id);
+      query.classId = { $in: classIds };
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [announcements, total] = await Promise.all([
+      Announcement.find(query)
+        .populate("teacherId", "name email")
+        .populate("classId", "className subject")
+        .populate("comments.userId", "name email role")
+        .sort({ isPinned: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Announcement.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: announcements.length,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit)),
+      data: announcements,
+    });
+  } catch (error) {
+    console.error("Get public stream error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch stream",
+    });
+  }
+};
+
+/**
+ * @desc    Get class-specific announcements (private + public for that class)
  * @route   GET /api/announcement/class/:classId
  * @access  Private (Teacher or enrolled student)
  */
 export const getClassStream = async (req, res) => {
   try {
     const { classId } = req.params;
-    const { type, limit = 20, page = 1 } = req.query;
+    const { type, limit = 20, page = 1, privateOnly = false } = req.query;
 
     // Verify access
     const classData = await Class.findById(classId);
@@ -98,10 +154,14 @@ export const getClassStream = async (req, res) => {
       });
     }
 
-    // Build query
+    // Build query - get all announcements for this class (both private and public)
     const query = { classId };
     if (type) {
       query.type = type;
+    }
+    // If privateOnly is true, only show private announcements
+    if (privateOnly === "true") {
+      query.isPrivate = true;
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -165,11 +225,23 @@ export const addComment = async (req, res) => {
       (s) => s.toString() === req.user.id
     );
 
-    if (!isTeacher && !isStudent) {
-      return res.status(403).json({
-        success: false,
-        error: "Not authorized to comment",
-      });
+    // For private announcements, only class members can comment
+    // For public announcements, any teacher can comment
+    if (announcement.isPrivate) {
+      if (!isTeacher && !isStudent) {
+        return res.status(403).json({
+          success: false,
+          error: "Not authorized to comment",
+        });
+      }
+    } else {
+      // Public announcement - teachers can comment, students only if enrolled
+      if (req.user.role === "student" && !isStudent) {
+        return res.status(403).json({
+          success: false,
+          error: "Not authorized to comment",
+        });
+      }
     }
 
     announcement.comments.push({
@@ -300,7 +372,7 @@ export const getRecentAnnouncements = async (req, res) => {
       });
     }
 
-    // Get recent announcements from all classes
+    // Get recent announcements from user's classes (both private and public)
     const announcements = await Announcement.find({
       classId: { $in: classIds },
     })

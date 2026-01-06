@@ -633,7 +633,7 @@ const Dashboard = () => {
                         : cls.teacher || cls.subject
                     }
                     badge={isTeacher ? cls.code : "Active"}
-                    onClick={() => navigate(`/classes/${cls.id}`)}
+                    onClick={() => navigate(`/class/${cls.id}`)}
                   />
                 ))
               ) : (
@@ -866,7 +866,7 @@ const Dashboard = () => {
                   </h3>
                   {classes.length > 0 && (
                     <button
-                      onClick={() => navigate(`/classes/${classes[0]?.id}`)}
+                      onClick={() => navigate("/announcements")}
                       className={`text-sm ${
                         isDark
                           ? "text-blue-400 hover:text-blue-300"
@@ -898,7 +898,7 @@ const Dashboard = () => {
                         announcement.isPinned ? "ring-1 ring-yellow-500" : ""
                       }`}
                       onClick={() =>
-                        navigate(`/classes/${announcement.classId?._id}`)
+                        navigate(`/class/${announcement.classId?._id}`)
                       }
                     >
                       <div className="flex items-start gap-3">
@@ -986,7 +986,7 @@ const Dashboard = () => {
                   </h3>
                   {classes.length > 0 && (
                     <button
-                      onClick={() => navigate(`/classes/${classes[0]?.id}`)}
+                      onClick={() => navigate(`/class/${classes[0]?.id}`)}
                       className={`text-sm ${
                         isDark
                           ? "text-blue-400 hover:text-blue-300"
@@ -1018,8 +1018,8 @@ const Dashboard = () => {
                       onClick={() =>
                         navigate(
                           item.type === "quiz"
-                            ? `/quizzes/${item._id}`
-                            : `/assignments/${item._id}`
+                            ? `/quiz/${item._id}`
+                            : `/assignment/${item._id}`
                         )
                       }
                     >
