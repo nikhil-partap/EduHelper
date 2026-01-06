@@ -14,10 +14,10 @@ const Hero = () => {
           </p>
 
           <div className="mt-8 flex gap-4">
-            <button className="bg-indigo-600 text-white px-6 py-3 rounded-lg">
+            <button className=" text-white px-6 py-3 rounded-lg">
               Student Access
             </button>
-            <button className="border border-indigo-600 text-indigo-600 px-6 py-3 rounded-lg">
+            <button className="border px-6 py-3 rounded-lg">
               Teacher Access
             </button>
           </div>
