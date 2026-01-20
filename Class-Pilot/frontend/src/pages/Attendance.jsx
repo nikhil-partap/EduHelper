@@ -143,13 +143,13 @@ const Attendance = () => {
 
       {/* Class Selection */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
-        <label className="block text-sm font-medium text-gray-200 mb-2">
+        <label className="block text-sm font-medium text-black mb-2">
           Select Class
         </label>
         <select
           value={selectedClass?._id || ""}
           onChange={(e) => handleClassSelect(e.target.value)}
-          className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-black rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Choose a class...</option>
           {classes.map((cls) => (
@@ -164,7 +164,7 @@ const Attendance = () => {
         <>
           {/* Date Selection */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
-            <label className="block text-sm font-medium text-gray-200 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Select Date
             </label>
             <input
@@ -184,7 +184,7 @@ const Attendance = () => {
               {/* Student List for Marking Attendance */}
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-white">
+                  <h2 className="text-xl font-semibold text-black">
                     Mark Attendance - {selectedDate}
                   </h2>
                   <div className="flex gap-2">
@@ -221,12 +221,12 @@ const Attendance = () => {
                         >
                           <div className="flex items-center space-x-3">
                             <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-semibold">
+                              <span className="text-black font-semibold">
                                 {student.name?.charAt(0).toUpperCase()}
                               </span>
                             </div>
                             <div>
-                              <p className="font-medium text-white">
+                              <p className="font-medium text-black">
                                 {student.name}
                               </p>
                               <p className="text-sm text-gray-400">
@@ -276,7 +276,7 @@ const Attendance = () => {
               {stats.length > 0 && (
                 <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6">
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold text-white">
+                    <h2 className="text-xl font-semibold text-black">
                       Attendance Statistics
                     </h2>
                     <button
@@ -330,7 +330,7 @@ const Attendance = () => {
                         {stats.map((stat) => (
                           <tr key={stat.studentId}>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-white">
+                              <div className="text-sm font-medium text-black">
                                 {stat.name}
                               </div>
                             </td>
@@ -351,7 +351,7 @@ const Attendance = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
-                                <div className="text-sm font-medium text-white">
+                                <div className="text-sm font-medium text-black">
                                   {stat.percentage}%
                                 </div>
                                 <div className="ml-2 w-16 bg-zinc-700 rounded-full h-2">

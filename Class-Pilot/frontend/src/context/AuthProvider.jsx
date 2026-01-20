@@ -61,13 +61,15 @@ export const AuthProvider = ({children}) => {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem("token");
+      
       if (token) {
         try {
           // Verify token is still valid
           const response = await authAPI.getMe();
+          
           dispatch({
             type: "LOGIN_SUCCESS",
-            payload: {user: response.data.user, token},
+            payload: {user: response.data.data.user, token},
           });
         } catch (error) {
           console.log("Token validation failed:", error.message);
@@ -87,13 +89,13 @@ export const AuthProvider = ({children}) => {
     dispatch({type: "LOGIN_START"});
     try {
       const response = await authAPI.login(credentials);
-      const {user, token} = response.data;
+      const {user, token} = response.data.data; // Fix: use response.data.data
 
       localStorage.setItem("token", token);
       dispatch({type: "LOGIN_SUCCESS", payload: {user, token}});
       return {success: true};
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Login failed";
+      const errorMessage = error.response?.data?.error || error.message || "Login failed"; // Fix: use .error instead of .message
       dispatch({type: "LOGIN_ERROR", payload: errorMessage});
       return {success: false, error: errorMessage};
     }
@@ -103,14 +105,13 @@ export const AuthProvider = ({children}) => {
     dispatch({type: "REGISTER_START"});
     try {
       const response = await authAPI.register(userData);
-      const {user, token} = response.data;
+      const {user, token} = response.data.data; // Fix: use response.data.data
 
       localStorage.setItem("token", token);
       dispatch({type: "REGISTER_SUCCESS", payload: {user, token}});
       return {success: true};
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Registration failed";
+      const errorMessage = error.response?.data?.error || error.message || "Registration failed"; // Fix: use .error instead of .message
       dispatch({type: "REGISTER_ERROR", payload: errorMessage});
       return {success: false, error: errorMessage};
     }

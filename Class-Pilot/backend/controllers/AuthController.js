@@ -1,6 +1,7 @@
 // File: /backend/controllers/authController.js
 
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import User from "../models/User.js";
 
 // Helper: Sign a JWT with user ID and role
@@ -19,31 +20,51 @@ const generateToken = (userId, role) => {
 // @access  Public
 export const registerUser = async (req, res, next) => {
   try {
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database connection unavailable. Please try again later."
+      });
+    }
+
     const { name, email, password, role, schoolName, rollNumber } = req.body; // destructuring assignment dont mess with the order
 
     // 1. check for all required fields more cleraly - // not trusting the frontend/user and checking the responce on server side
     if (!name || !email || !password || !role) {
       return res
         .status(400)
-        .json({ message: "Name, email, password, and role are required" });
+        .json({ 
+          success: false,
+          error: "Name, email, password, and role are required" 
+        });
     }
 
     // Role-specific validation
     if (role === "teacher" && !schoolName) {
       return res
         .status(400)
-        .json({ message: "schoolName is required for teachers" });
+        .json({ 
+          success: false,
+          error: "schoolName is required for teachers" 
+        });
     }
     if (role === "student" && !rollNumber) {
       return res
         .status(400)
-        .json({ message: "rollNumber is required for students" });
+        .json({ 
+          success: false,
+          error: "rollNumber is required for students" 
+        });
     }
 
     // 2. prevent/checking for duplicate registrations
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ message: "Email already in use" });
+      return res.status(409).json({ 
+        success: false,
+        error: "Email already in use" 
+      });
     }
 
     // 3. create user (password hashing runs pre-save hooks )
@@ -58,18 +79,43 @@ export const registerUser = async (req, res, next) => {
 
     // 5. respond with user info + Token
     res.status(201).json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        schoolName: user.schoolName,
-        rollNumber: user.rollNumber,
-      },
-      token,
+      success: true,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          schoolName: user.schoolName,
+          rollNumber: user.rollNumber,
+        },
+        token
+      }
     });
   } catch (error) {
-    next(error);
+    console.error('Registration error:', error);
+    
+    // Handle specific MongoDB errors
+    if (error.name === 'MongoNetworkError') {
+      return res.status(503).json({
+        success: false,
+        error: "Database connection lost. Please try again."
+      });
+    }
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({
+        success: false,
+        error: messages.join(', ')
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: "Server error. Please try again later."
+    });
   }
 };
 
@@ -78,21 +124,32 @@ export const registerUser = async (req, res, next) => {
 // @access  Public
 export const loginUser = async (req, res, next) => {
   try {
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database connection unavailable. Please try again later."
+      });
+    }
+
     const { email, password } = req.body;
 
     // validating input
     if (!email || !password) {
       return res
         .status(400)
-        .json({ message: "Email and password are required" });
+        .json({ 
+          success: false,
+          error: "Email and password are required" 
+        });
     }
 
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
-        message:
-          "Invalid email or password(the Email is not found in the database )",
+        success: false,
+        error: "Invalid email or password"
       });
     }
 
@@ -100,7 +157,8 @@ export const loginUser = async (req, res, next) => {
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({
-        message: "Invalid email or password(the password is incorrect)",
+        success: false,
+        error: "Invalid email or password"
       });
     }
 
@@ -109,36 +167,68 @@ export const loginUser = async (req, res, next) => {
 
     // Return user info + token
     res.status(200).json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        schoolName: user.schoolName,
-        rollNumber: user.rollNumber,
-      },
-      token,
+      success: true,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          schoolName: user.schoolName,
+          rollNumber: user.rollNumber,
+        },
+        token
+      }
     });
   } catch (error) {
-    next(error);
+    console.error('Login error:', error);
+    
+    // Handle specific MongoDB errors
+    if (error.name === 'MongoNetworkError') {
+      return res.status(503).json({
+        success: false,
+        error: "Database connection lost. Please try again."
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: "Server error. Please try again later."
+    });
   }
 };
 
 export const getMe = async (req, res, next) => {
   try {
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database connection unavailable. Please try again later."
+      });
+    }
+
     // req.user is set by protect middleware
     // Return in same format as login/register for consistency
     res.status(200).json({
-      user: {
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role,
-        schoolName: req.user.schoolName,
-        rollNumber: req.user.rollNumber,
-      },
+      success: true,
+      data: {
+        user: {
+          id: req.user._id,
+          name: req.user.name,
+          email: req.user.email,
+          role: req.user.role,
+          schoolName: req.user.schoolName,
+          rollNumber: req.user.rollNumber,
+        }
+      }
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    console.error('GetMe error:', error);
+    
+    res.status(500).json({
+      success: false,
+      error: "Server error. Please try again later."
+    });
   }
 };

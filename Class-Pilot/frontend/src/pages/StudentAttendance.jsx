@@ -63,7 +63,7 @@ const StudentAttendance = () => {
 
       {/* Class Selection */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
-        <label className="block text-sm font-medium text-gray-200 mb-2">
+        <label className="block text-sm font-medium text-black mb-2">
           Select Class
         </label>
         <select
@@ -92,7 +92,7 @@ const StudentAttendance = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-400">Total Days</p>
-                  <p className="text-3xl font-bold text-white mt-1">
+                  <p className="text-3xl font-bold text-black mt-1">
                     {attendanceData.total}
                   </p>
                 </div>
@@ -147,7 +147,7 @@ const StudentAttendance = () => {
 
           {/* Attendance Status Indicator */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-semibold text-white mb-4">
+            <h2 className="text-xl font-semibold text-black mb-4">
               Attendance Status
             </h2>
             <div className="flex items-center space-x-4">
@@ -165,7 +165,7 @@ const StudentAttendance = () => {
                   ></div>
                 </div>
               </div>
-              <div className="text-white font-semibold">
+              <div className="text-black font-semibold">
                 {attendanceData.percentage}%
               </div>
             </div>
@@ -188,7 +188,7 @@ const StudentAttendance = () => {
 
           {/* Detailed Attendance Records */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">
+            <h2 className="text-xl font-semibold text-black mb-4">
               Attendance Records
             </h2>
 
@@ -214,7 +214,7 @@ const StudentAttendance = () => {
                       .map((record, index) => (
                         <tr key={index}>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-white">
+                            <div className="text-sm text-black">
                               {new Date(record.date).toLocaleDateString(
                                 "en-US",
                                 {
