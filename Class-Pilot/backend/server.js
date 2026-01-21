@@ -31,10 +31,11 @@ const PORT = process.env.PORT || 5000;
 app.use(
   cors({
     origin: [
-      "http://localhost:5173",
+      "http://localhost:5173", 
       "http://localhost:3000",
       "http://192.168.136.145:5173/",
       /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/, // Allow local network IPs
+      "https://your-frontend-url.azurestaticapps.net" // Add your production frontend URL
     ],
     credentials: true,
   })
