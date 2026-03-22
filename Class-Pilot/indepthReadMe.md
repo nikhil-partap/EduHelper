@@ -2,6 +2,56 @@
 
 Deep-dive technical documentation for developers who want to understand, modify, or extend the Class Pilot codebase.
 
+**Note:** This project was previously known as "EduHelper" and was rebranded to "Class Pilot". Some internal references and file names may still use the old name.
+
+---
+
+## Quick Reference
+
+### Key Technologies
+
+- **Backend:** Node.js 20.19+, Express 5.1.0, MongoDB 6.20.0, Mongoose 8.19.1
+- **Frontend:** React 19.1.1, Vite 7.1.14, Tailwind CSS 4.1.14, React Router 7.9.4
+- **AI:** Google Gemini 2.5-flash (primary), OpenAI GPT-3.5-turbo (fallback)
+- **Auth:** JWT with bcryptjs password hashing
+
+### Project Structure
+
+```
+Class-Pilot/
+├── backend/          # Express.js API (Port 5000)
+│   ├── controllers/  # Business logic
+│   ├── models/       # Mongoose schemas
+│   ├── routes/       # API endpoints
+│   ├── middleware/   # Auth & validation
+│   └── utils/        # AI service, helpers
+└── frontend/         # React SPA (Port 5173)
+    └── src/
+        ├── components/  # UI components
+        ├── pages/       # Route pages
+        ├── context/     # State management
+        ├── hooks/       # Custom hooks
+        └── services/    # API client
+```
+
+### Quick Start Commands
+
+```bash
+# Backend
+cd backend && npm install && npm run dev
+
+# Frontend
+cd frontend && npm install && npm run dev
+```
+
+### Essential Environment Variables
+
+```env
+MONGO_URI=mongodb+srv://...
+JWT_SECRET=your-secret-key
+GEMINI_API_KEY=your-gemini-key
+```
+
 ---
 
 ## Table of Contents
@@ -16,6 +66,14 @@ Deep-dive technical documentation for developers who want to understand, modify,
 8. [State Management](#state-management)
 9. [Request/Response Flow](#requestresponse-flow)
 10. [Security Implementation](#security-implementation)
+11. [Recent Updates & Changes](#recent-updates--changes)
+12. [Environment Variables Reference](#environment-variables-reference)
+13. [Deployment Notes](#deployment-notes)
+14. [Testing Utilities](#testing-utilities)
+15. [Performance Considerations](#performance-considerations)
+16. [Known Limitations](#known-limitations)
+17. [Future Roadmap](#future-roadmap)
+18. [Contributing](#contributing)
 
 ---
 
@@ -71,22 +129,27 @@ Deep-dive technical documentation for developers who want to understand, modify,
 
 ### Technology Stack Details
 
-| Layer         | Technology            | Version | Purpose                          |
-| ------------- | --------------------- | ------- | -------------------------------- |
-| Runtime       | Node.js               | 16+     | JavaScript runtime               |
-| Framework     | Express.js            | 5.x     | HTTP server, routing, middleware |
-| Database      | MongoDB Atlas         | 6.x     | Document storage                 |
-| ODM           | Mongoose              | 8.x     | Schema validation, queries       |
-| Auth          | jsonwebtoken          | 9.x     | JWT creation/verification        |
-| Hashing       | bcryptjs              | 2.x     | Password hashing                 |
-| AI            | @google/generative-ai | latest  | Gemini API client                |
-| AI Fallback   | openai                | 4.x     | OpenAI API client                |
-| ID Generation | nanoid                | 5.x     | Class code generation            |
-| Frontend      | React                 | 19      | UI components                    |
-| Build         | Vite                  | 6.x     | Dev server, bundling             |
-| Styling       | Tailwind CSS          | 4.x     | Utility classes                  |
-| Routing       | React Router          | 7.x     | Client-side routing              |
-| HTTP          | Axios                 | 1.x     | API requests                     |
+| Layer         | Technology             | Version | Purpose                          |
+| ------------- | ---------------------- | ------- | -------------------------------- |
+| Runtime       | Node.js                | 20.19+  | JavaScript runtime               |
+| Framework     | Express.js             | 5.1.0   | HTTP server, routing, middleware |
+| Database      | MongoDB Atlas          | 6.20.0  | Document storage                 |
+| ODM           | Mongoose               | 8.19.1  | Schema validation, queries       |
+| Auth          | jsonwebtoken           | 9.0.2   | JWT creation/verification        |
+| Hashing       | bcryptjs               | 3.0.2   | Password hashing                 |
+| AI            | @google/generative-ai  | 0.24.1  | Gemini API client                |
+| AI Vertex     | @google-cloud/vertexai | 1.10.0  | Vertex AI integration            |
+| AI Fallback   | openai                 | 6.9.1   | OpenAI API client                |
+| ID Generation | nanoid                 | 5.1.6   | Class code generation            |
+| PDF Export    | pdfkit                 | 0.17.2  | PDF generation                   |
+| Excel Export  | exceljs                | 4.4.0   | Excel file generation            |
+| Frontend      | React                  | 19.1.1  | UI components                    |
+| Build         | Vite                   | 7.1.14  | Dev server, bundling (rolldown)  |
+| Styling       | Tailwind CSS           | 4.1.14  | Utility classes                  |
+| Routing       | React Router           | 7.9.4   | Client-side routing              |
+| HTTP          | Axios                  | 1.12.2  | API requests                     |
+| Drag & Drop   | @dnd-kit               | 6.3.1+  | Drag and drop functionality      |
+| Charts        | recharts               | 3.6.0   | Data visualization               |
 
 ---
 
@@ -115,10 +178,10 @@ app.use(
       /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/, // LAN regex
     ],
     credentials: true, // Allow cookies/auth headers
-  })
+  }),
 );
 app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({extended: true})); // Parse form data
+app.use(express.urlencoded({ extended: true })); // Parse form data
 
 // Route mounting
 app.use("/api/auth", authRoutes);
@@ -154,8 +217,12 @@ mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<database>?retryWrites=tru
 ```javascript
 // routes/auth.js
 import express from "express";
-import {registerUser, loginUser, getMe} from "../controllers/AuthController.js";
-import {protect} from "../middleware/auth.js";
+import {
+  registerUser,
+  loginUser,
+  getMe,
+} from "../controllers/AuthController.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -172,24 +239,24 @@ export default router;
 // controllers/AuthController.js
 export const registerUser = async (req, res, next) => {
   try {
-    const {name, email, password, role, schoolName, rollNumber} = req.body;
+    const { name, email, password, role, schoolName, rollNumber } = req.body;
 
     // 1. Validation (never trust frontend)
     if (!name || !email || !password || !role) {
-      return res.status(400).json({message: "Required fields missing"});
+      return res.status(400).json({ message: "Required fields missing" });
     }
 
     // 2. Role-specific validation
     if (role === "teacher" && !schoolName) {
       return res
         .status(400)
-        .json({message: "schoolName required for teachers"});
+        .json({ message: "schoolName required for teachers" });
     }
 
     // 3. Duplicate check
-    const existingUser = await User.findOne({email});
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({message: "Email already in use"});
+      return res.status(409).json({ message: "Email already in use" });
     }
 
     // 4. Create user (password hashed in pre-save hook)
@@ -204,14 +271,14 @@ export const registerUser = async (req, res, next) => {
 
     // 5. Generate JWT
     const token = jwt.sign(
-      {userId: user._id, role: user.role},
+      { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
-      {expiresIn: "24h"}
+      { expiresIn: "24h" },
     );
 
     // 6. Response
     res.status(201).json({
-      user: {id: user._id, name, email, role, schoolName, rollNumber},
+      user: { id: user._id, name, email, role, schoolName, rollNumber },
       token,
     });
   } catch (error) {
@@ -235,7 +302,7 @@ import "./index.css";
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
 );
 ```
 
@@ -274,7 +341,7 @@ const API_BASE_URL = "http://localhost:5000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {"Content-Type": "application/json"},
+  headers: { "Content-Type": "application/json" },
 });
 
 // Request interceptor - auto-attach JWT
@@ -296,7 +363,7 @@ export const authAPI = {
 export const classAPI = {
   createClass: (data) => api.post("/api/class/create", data),
   getTeacherClasses: () => api.get("/api/class/teacher"),
-  joinClass: (classCode) => api.post("/api/class/join", {classCode}),
+  joinClass: (classCode) => api.post("/api/class/join", { classCode }),
   getStudentClasses: () => api.get("/api/class/student"),
   getClassDetails: (id) => api.get(`/api/class/${id}`),
 };
@@ -324,7 +391,9 @@ export const classAPI = {
 ```javascript
 // controllers/AuthController.js
 const generateToken = (userId, role) => {
-  return jwt.sign({userId, role}, process.env.JWT_SECRET, {expiresIn: "24h"});
+  return jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+    expiresIn: "24h",
+  });
 };
 ```
 
@@ -342,7 +411,7 @@ export const protect = async (req, res, next) => {
 
   // 2. No token = unauthorized
   if (!token) {
-    return res.status(401).json({message: "Not authorized, no token"});
+    return res.status(401).json({ message: "Not authorized, no token" });
   }
 
   try {
@@ -354,7 +423,7 @@ export const protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    res.status(401).json({message: "Not authorized, token failed"});
+    res.status(401).json({ message: "Not authorized, token failed" });
   }
 };
 ```
@@ -366,7 +435,7 @@ export const protect = async (req, res, next) => {
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({success: false, error: "Not authorized"});
+      return res.status(401).json({ success: false, error: "Not authorized" });
     }
 
     if (!roles.includes(req.user.role)) {
@@ -390,7 +459,7 @@ router.post("/create", protect, authorize("teacher"), createClass);
 const authReducer = (state, action) => {
   switch (action.type) {
     case "LOGIN_START":
-      return {...state, loading: true, error: null};
+      return { ...state, loading: true, error: null };
     case "LOGIN_SUCCESS":
       return {
         ...state,
@@ -461,7 +530,7 @@ Login Flow:
 // models/User.js
 const userSchema = new mongoose.Schema(
   {
-    name: {type: String, required: true, trim: true},
+    name: { type: String, required: true, trim: true },
     email: {
       type: String,
       required: true,
@@ -469,8 +538,8 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    password: {type: String, required: true, minlength: 4},
-    role: {type: String, required: true, enum: ["teacher", "student"]},
+    password: { type: String, required: true, minlength: 4 },
+    role: { type: String, required: true, enum: ["teacher", "student"] },
 
     // Conditional fields
     schoolName: {
@@ -488,7 +557,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
   },
-  {timestamps: true}
+  { timestamps: true },
 );
 
 // Pre-save hook for password hashing
@@ -513,25 +582,25 @@ const User = mongoose.model("User", userSchema, "user");
 
 ```javascript
 // models/Class.js
-import {customAlphabet} from "nanoid";
+import { customAlphabet } from "nanoid";
 
 // 6-char alphanumeric generator
 const nanoid = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6);
 
 const classSchema = new mongoose.Schema(
   {
-    className: {type: String, required: true, trim: true},
-    subject: {type: String, required: true, trim: true},
-    board: {type: String, required: true, trim: true},
-    classCode: {type: String, unique: true, uppercase: true},
+    className: { type: String, required: true, trim: true },
+    subject: { type: String, required: true, trim: true },
+    board: { type: String, required: true, trim: true },
+    classCode: { type: String, unique: true, uppercase: true },
     teacherId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    students: [{type: mongoose.Schema.Types.ObjectId, ref: "User"}],
+    students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
-  {timestamps: true}
+  { timestamps: true },
 );
 
 // Auto-generate unique classCode before first save
@@ -547,7 +616,7 @@ classSchema.pre("save", async function (next) {
     code = `${prefix}-${nanoid()}`;
 
     // Check for collision
-    exists = await mongoose.models.Class.exists({classCode: code});
+    exists = await mongoose.models.Class.exists({ classCode: code });
   }
 
   this.classCode = code;
@@ -560,7 +629,7 @@ classSchema.pre("save", async function (next) {
 ```javascript
 const quizSchema = new mongoose.Schema(
   {
-    title: {type: String, required: true},
+    title: { type: String, required: true },
     classId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Class",
@@ -573,9 +642,9 @@ const quizSchema = new mongoose.Schema(
     },
     questions: [
       {
-        question: {type: String, required: true},
-        options: [{type: String, required: true}], // Array of 4 options
-        correctAnswer: {type: Number, required: true, min: 0, max: 3}, // Index
+        question: { type: String, required: true },
+        options: [{ type: String, required: true }], // Array of 4 options
+        correctAnswer: { type: Number, required: true, min: 0, max: 3 }, // Index
         difficultyLevel: {
           type: String,
           enum: ["easy", "medium", "hard"],
@@ -583,12 +652,12 @@ const quizSchema = new mongoose.Schema(
         },
       },
     ],
-    timeLimit: {type: Number, default: 30}, // Minutes
-    randomizeQuestions: {type: Boolean, default: false},
-    showInstantFeedback: {type: Boolean, default: true},
-    isActive: {type: Boolean, default: true},
+    timeLimit: { type: Number, default: 30 }, // Minutes
+    randomizeQuestions: { type: Boolean, default: false },
+    showInstantFeedback: { type: Boolean, default: true },
+    isActive: { type: Boolean, default: true },
   },
-  {timestamps: true}
+  { timestamps: true },
 );
 ```
 
@@ -596,21 +665,21 @@ const quizSchema = new mongoose.Schema(
 
 ```javascript
 const quizAttemptSchema = new mongoose.Schema({
-  quizId: {type: mongoose.Schema.Types.ObjectId, ref: "Quiz", required: true},
+  quizId: { type: mongoose.Schema.Types.ObjectId, ref: "Quiz", required: true },
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
-  answers: [{type: Number}], // Array of selected option indices
-  score: {type: Number, required: true},
-  totalQuestions: {type: Number, required: true},
-  timeTaken: {type: Number}, // Seconds
-  submittedAt: {type: Date, default: Date.now},
+  answers: [{ type: Number }], // Array of selected option indices
+  score: { type: Number, required: true },
+  totalQuestions: { type: Number, required: true },
+  timeTaken: { type: Number }, // Seconds
+  submittedAt: { type: Date, default: Date.now },
 });
 
 // Compound index to prevent duplicate attempts
-quizAttemptSchema.index({quizId: 1, studentId: 1}, {unique: true});
+quizAttemptSchema.index({ quizId: 1, studentId: 1 }, { unique: true });
 ```
 
 ### StudyPlanner Model
@@ -624,11 +693,11 @@ const studyPlannerSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    academicYear: {type: Number, required: true},
+    academicYear: { type: Number, required: true },
     chapters: [
       {
-        name: {type: String, required: true},
-        durationDays: {type: Number, required: true, min: 1, max: 10},
+        name: { type: String, required: true },
+        durationDays: { type: Number, required: true, min: 1, max: 10 },
         startDate: Date,
         endDate: Date,
         status: {
@@ -638,7 +707,7 @@ const studyPlannerSchema = new mongoose.Schema(
         },
       },
     ],
-    holidays: [{type: Date}],
+    holidays: [{ type: Date }],
     examDates: [
       {
         name: String,
@@ -646,7 +715,7 @@ const studyPlannerSchema = new mongoose.Schema(
       },
     ],
   },
-  {timestamps: true}
+  { timestamps: true },
 );
 ```
 
@@ -852,7 +921,9 @@ function initializeClients() {
     process.env.GEMINI_API_KEY !== "your_gemini_api_key_here"
   ) {
     geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    geminiModel = geminiClient.getGenerativeModel({model: "gemini-2.5-flash"});
+    geminiModel = geminiClient.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
   }
 
   // OpenAI (fallback)
@@ -860,7 +931,7 @@ function initializeClients() {
     process.env.OPENAI_API_KEY &&
     process.env.OPENAI_API_KEY !== "your_openai_api_key_here"
   ) {
-    openaiClient = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
+    openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
 
   clientsInitialized = true;
@@ -983,7 +1054,7 @@ const authReducer = (state, action) => {
   switch (action.type) {
     case "LOGIN_START":
     case "REGISTER_START":
-      return {...state, loading: true, error: null};
+      return { ...state, loading: true, error: null };
 
     case "LOGIN_SUCCESS":
     case "REGISTER_SUCCESS":
@@ -1024,8 +1095,8 @@ const authReducer = (state, action) => {
 
 ```javascript
 // hooks/useAuth.js
-import {useContext} from "react";
-import {AuthContext} from "../context/AuthContext";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -1036,7 +1107,7 @@ export const useAuth = () => {
 };
 
 // Usage in components
-const {user, isAuthenticated, login, logout} = useAuth();
+const { user, isAuthenticated, login, logout } = useAuth();
 ```
 
 ---
@@ -1125,9 +1196,9 @@ return await bcrypt.compare(enteredPassword, this.password);
 ```javascript
 // Token creation
 jwt.sign(
-  {userId: user._id, role: user.role}, // Payload (no sensitive data)
+  { userId: user._id, role: user.role }, // Payload (no sensitive data)
   process.env.JWT_SECRET, // Secret from env
-  {expiresIn: "24h"} // Expiration
+  { expiresIn: "24h" }, // Expiration
 );
 
 // Token verification
@@ -1312,7 +1383,6 @@ npm run preview      # preview production build
 ## Environment Setup Checklist
 
 1. **MongoDB Atlas**
-
    - Create cluster
    - Create database user
    - Whitelist IP (0.0.0.0/0 for dev)
@@ -1329,7 +1399,6 @@ npm run preview      # preview production build
    ```
 
 3. **Google AI Studio**
-
    - Create project
    - Enable Generative AI API
    - Create API key
@@ -1364,18 +1433,18 @@ export const createClass = async (req, res, next) => {
   } catch (error) {
     // Mongoose duplicate key error
     if (error.code === 11000) {
-      return res.status(409).json({message: "Duplicate entry"});
+      return res.status(409).json({ message: "Duplicate entry" });
     }
 
     // Mongoose validation error
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((e) => e.message);
-      return res.status(400).json({message: messages.join(", ")});
+      return res.status(400).json({ message: messages.join(", ") });
     }
 
     // Mongoose cast error (invalid ObjectId)
     if (error.name === "CastError") {
-      return res.status(400).json({message: "Invalid ID format"});
+      return res.status(400).json({ message: "Invalid ID format" });
     }
 
     // Pass to global error handler
@@ -1443,14 +1512,14 @@ const handleSubmit = async (data) => {
 
 ```javascript
 // Standard page component pattern
-import {useState, useEffect} from "react";
-import {useAuth} from "../hooks/useAuth";
-import {LoadingSpinner, Alert} from "../components/shared";
-import {classAPI} from "../services/api";
+import { useState, useEffect } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { LoadingSpinner, Alert } from "../components/shared";
+import { classAPI } from "../services/api";
 
 const PageComponent = () => {
   // 1. Hooks
-  const {user} = useAuth();
+  const { user } = useAuth();
 
   // 2. State
   const [data, setData] = useState([]);
@@ -1496,8 +1565,8 @@ export default PageComponent;
 
 ```javascript
 // App.jsx
-const ProtectedRoute = ({children}) => {
-  const {isAuthenticated, loading} = useAuth();
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
@@ -1526,7 +1595,7 @@ const ProtectedRoute = ({children}) => {
 ```javascript
 // Render different components based on role
 const ClassesPage = () => {
-  const {user} = useAuth();
+  const { user } = useAuth();
 
   if (user?.role === "teacher") {
     return <TeacherClasses />;
@@ -1567,7 +1636,7 @@ const ClassesPage = () => {
 // context/ThemeContext.jsx
 const ThemeContext = createContext();
 
-export const ThemeProvider = ({children}) => {
+export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem("theme") || "dark";
   });
@@ -1579,7 +1648,7 @@ export const ThemeProvider = ({children}) => {
   };
 
   return (
-    <ThemeContext.Provider value={{theme, toggleTheme}}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -1971,7 +2040,333 @@ Built as a CS50x Final Project
 
 ---
 
-_Last updated: December 2024_
+_Last updated: January 2025_
+
+---
+
+## Recent Updates & Changes
+
+### Version 1.0.0 (January 2025)
+
+#### Technology Stack Updates
+
+- **Backend:**
+  - Upgraded to Express.js 5.1.0
+  - Updated Mongoose to 8.19.1
+  - Added @google-cloud/vertexai 1.10.0 for enhanced AI capabilities
+  - Updated OpenAI to 6.9.1
+  - Added ExcelJS 4.4.0 for Excel export functionality
+  - Added PDFKit 0.17.2 for PDF generation
+  - Updated Axios to 1.12.2
+  - Updated MongoDB driver to 6.20.0
+
+- **Frontend:**
+  - Upgraded to React 19.1.1
+  - Updated to Vite 7.1.14 (using rolldown-vite for improved performance)
+  - Updated React Router to 7.9.4
+  - Updated Tailwind CSS to 4.1.14
+  - Added @dnd-kit packages (6.3.1+) for drag-and-drop functionality
+  - Added Recharts 3.6.0 for data visualization
+  - Updated Axios to 1.12.2
+
+#### New Features
+
+1. **Enhanced AI Integration:**
+   - Dual AI provider support (Gemini and OpenAI)
+   - Configurable AI provider via environment variable
+   - Improved error handling and fallback mechanisms
+   - AI-powered study plan generation
+
+2. **Export Functionality:**
+   - PDF export for student portfolios
+   - Excel export for attendance records
+   - Excel export for grade reports
+   - Excel export for quiz results
+
+3. **Drag & Drop Interface:**
+   - Study planner chapter reordering
+   - Improved UX for content organization
+
+4. **Data Visualization:**
+   - Charts for grade trends
+   - Quiz performance analytics
+   - Attendance statistics visualization
+
+5. **Enhanced Attendance System:**
+   - CSV bulk upload support
+   - Improved statistics calculation
+   - Better date handling
+
+#### API Improvements
+
+- Added health check endpoint (`/health`)
+- Improved error handling with detailed error messages
+- Enhanced CORS configuration for Azure deployment
+- Added request logging middleware
+- Graceful shutdown handling (SIGINT, SIGTERM)
+
+#### Database Schema Enhancements
+
+- Added compound indexes for better query performance
+- Enhanced validation rules
+- Improved date handling in StudyPlanner model
+- Added status tracking for assignments and meetings
+
+#### Security Updates
+
+- Updated JWT token handling
+- Enhanced password hashing (bcryptjs 3.0.2)
+- Improved input validation
+- Better error messages without exposing sensitive data
+
+#### Developer Experience
+
+- Added comprehensive testing utilities in `backend/Testers&Reseters/`
+- Improved documentation with detailed API reference
+- Added Azure deployment guide
+- Enhanced setup instructions
+- Better error messages and logging
+
+#### Bug Fixes
+
+- Fixed attendance marking for duplicate dates
+- Resolved quiz attempt duplicate prevention
+- Fixed class code generation collisions
+- Improved date calculations in study planner
+- Fixed CORS issues for local network access
+
+---
+
+## Environment Variables Reference
+
+### Backend (.env)
+
+```env
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+
+# Database
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority
+
+# Authentication
+JWT_SECRET=your-super-secret-key-change-in-production
+JWT_EXPIRE=24h
+
+# AI Configuration
+AI_PROVIDER=gemini                    # "gemini" or "openai"
+GEMINI_API_KEY=your-gemini-api-key
+OPENAI_API_KEY=your-openai-api-key    # Optional fallback
+
+# Optional: Vertex AI (for advanced features)
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_APPLICATION_CREDENTIALS=./service-account-key.json
+```
+
+### Frontend
+
+No environment variables required for development. For production deployment, configure the API base URL in `src/services/api.js`.
+
+---
+
+## Deployment Notes
+
+### Azure Static Web Apps (Frontend)
+
+The frontend includes `staticwebapp.config.json` for Azure deployment with proper routing configuration.
+
+### Azure App Service (Backend)
+
+The backend is configured for Azure deployment with:
+
+- Proper CORS settings for Azure Static Web Apps
+- Health check endpoint for monitoring
+- Graceful shutdown handling
+- Production-ready error handling
+
+See `AZURE_DEPLOYMENT_GUIDE.md` for detailed deployment instructions.
+
+---
+
+## Testing Utilities
+
+The project includes several testing utilities in `backend/Testers&Reseters/`:
+
+- `test-api.js` - Test all API endpoints
+- `test-class-api.js` - Test class-specific endpoints
+- `test-ai.js` - Test AI integration
+- `test-all-features.js` - Comprehensive feature testing
+- `quick-test.js` - Quick smoke tests
+- `create-test-student.js` - Create test student accounts
+- `reset-password.js` - Password reset utility
+
+Run tests with:
+
+```bash
+cd backend
+node Testers&Reseters/test-api.js
+```
+
+---
+
+## Performance Considerations
+
+### Database Indexes
+
+The following indexes are configured for optimal query performance:
+
+- **Users:** email (unique)
+- **Classes:** classCode (unique), teacherId
+- **Attendance:** compound index on (classId, studentId, date)
+- **QuizAttempts:** compound unique index on (quizId, studentId)
+- **Quizzes:** compound index on (classId, teacherId, createdAt)
+
+### Caching Strategy
+
+- JWT tokens cached in localStorage (frontend)
+- AI clients initialized lazily (backend)
+- MongoDB connection pooling enabled
+
+### Optimization Tips
+
+1. Use pagination for large data sets (announcements, grades)
+2. Implement lazy loading for images and heavy components
+3. Use React.memo for expensive components
+4. Leverage MongoDB aggregation for complex queries
+5. Consider Redis for session management in production
+
+---
+
+## Known Limitations
+
+1. **AI Generation:**
+   - Requires active API keys (Gemini or OpenAI)
+   - Subject to API rate limits and quotas
+   - Generated content quality depends on prompt engineering
+
+2. **File Uploads:**
+   - Currently limited to text content for assignments
+   - File attachment support planned for future release
+
+3. **Real-time Features:**
+   - No WebSocket support yet
+   - Polling required for live updates
+   - Real-time chat planned for future release
+
+4. **Mobile App:**
+   - Currently web-only
+   - Responsive design works on mobile browsers
+   - Native mobile apps planned for future
+
+---
+
+## Future Roadmap
+
+### Planned Features
+
+1. **Real-time Communication:**
+   - WebSocket integration for live updates
+   - In-app chat between teachers and students
+   - Real-time quiz participation
+
+2. **Enhanced File Management:**
+   - File upload support for assignments
+   - Cloud storage integration (AWS S3, Azure Blob)
+   - Document preview functionality
+
+3. **Advanced Analytics:**
+   - Predictive analytics for student performance
+   - AI-powered insights and recommendations
+   - Custom report generation
+
+4. **Mobile Applications:**
+   - React Native mobile apps
+   - Push notifications
+   - Offline mode support
+
+5. **Integration Capabilities:**
+   - Google Classroom integration
+   - Microsoft Teams integration
+   - LMS integration (Moodle, Canvas)
+
+6. **Accessibility:**
+   - Screen reader optimization
+   - Keyboard navigation improvements
+   - High contrast themes
+
+---
+
+## Contributing
+
+### Code Style Guidelines
+
+- Use ES Modules (`import`/`export`)
+- Include `.js` extension in backend imports
+- Use async/await over Promises
+- Destructure objects and arrays
+- Use `const` by default, `let` when needed
+- Follow Airbnb JavaScript Style Guide
+
+### Commit Message Format
+
+```
+type(scope): subject
+
+body (optional)
+
+footer (optional)
+```
+
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
+Examples:
+
+```
+feat(quiz): add AI-powered quiz generation
+fix(attendance): resolve duplicate date marking issue
+docs(readme): update installation instructions
+```
+
+### Pull Request Process
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## Support & Contact
+
+For issues, questions, or contributions:
+
+- **GitHub Issues:** [Create an issue](https://github.com/your-repo/issues)
+- **Documentation:** See `indepthReadMe.md` for technical details
+- **Setup Guide:** See `SETUP.md` for installation help
+
+---
+
+## License
+
+MIT License - Educational Use
+
+Built as a CS50x Final Project by Nikhil Pratap Singh
+
+---
+
+## Acknowledgments
+
+- CS50x course by Harvard University
+- MongoDB Atlas for database hosting
+- Google Gemini AI for quiz generation
+- OpenAI for fallback AI capabilities
+- React and Vite communities
+- All open-source contributors
+
+---
+
+_Last updated: January 2025_
 
 ---
 
